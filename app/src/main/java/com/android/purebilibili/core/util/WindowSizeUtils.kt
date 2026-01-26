@@ -59,11 +59,11 @@ data class WindowSizeClass(
     
     /** 是否应该使用分栏布局 */
     val shouldUseSplitLayout: Boolean
-        get() = widthSizeClass == WindowWidthSizeClass.Expanded
+        get() = isTablet // [Modified] Enable split layout for Medium (600dp+) and Expanded
     
     /** 是否应该使用侧边导航栏（仅大屏） */
     val shouldUseSideNavigation: Boolean
-        get() = widthSizeClass == WindowWidthSizeClass.Expanded
+        get() = isTablet // [Modified] Enable side navigation for Medium (600dp+) and Expanded
 }
 
 /**

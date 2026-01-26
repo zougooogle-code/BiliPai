@@ -62,6 +62,8 @@ import com.android.purebilibili.core.util.responsiveContentWidth
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import com.android.purebilibili.core.ui.blur.unifiedBlur
+import com.android.purebilibili.core.util.LocalWindowSizeClass
+import com.android.purebilibili.data.model.response.HotItem
 
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -316,192 +318,110 @@ fun SearchScreen(
                     }
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .responsiveContentWidth()
-                        .hazeSource(state = hazeState),
-                    state = historyListState,
-                    //  contentPadding 顶部避让搜索栏
-                    contentPadding = PaddingValues(top = contentTopPadding + 16.dp, bottom = 16.dp, start = 16.dp, end = 16.dp)
-                ) {
+                // 判断是否使用分栏布局 (平板横屏)
+                val windowSizeClass = LocalWindowSizeClass.current
+                val useSplitLayout = windowSizeClass.shouldUseSplitLayout
 
-                    
-                    //  搜索发现 (恢复此板块)
-                    item {
-                            //  搜索发现 / 个性化推荐
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        "💎",
-                                        fontSize = 16.sp
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        state.discoverTitle, //  使用动态标题
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                                
-                                // 刷新按钮
-                                Row(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .clickable { /* TODO: Refresh logic */ }
-                                        .padding(4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        "换一换",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                            
-                            // 动态发现内容
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                state.discoverList.forEach { keyword -> //  使用动态列表
-                                    Surface(
-                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                        shape = RoundedCornerShape(6.dp),
-                                        modifier = Modifier.clickable { 
-                                            viewModel.search(keyword)
-                                            keyboardController?.hide() 
-                                        }
-                                    ) {
-                                        Text(
-                                            keyword,
-                                            fontSize = 13.sp,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                        )
-                                    }
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(24.dp))
-                    }
-
-                    if (state.hotList.isNotEmpty()) {
-                        item {
-                            //  热搜标题
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    "",
-                                    fontSize = 16.sp
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    "热门搜索",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurface
+                if (useSplitLayout) {
+                    // 🟢 平板分栏布局
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .hazeSource(state = hazeState)
+                    ) {
+                        // 左侧栏：发现 + 历史
+                        LazyColumn(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            contentPadding = PaddingValues(top = contentTopPadding + 16.dp, bottom = 16.dp, start = 24.dp, end = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(24.dp)
+                        ) {
+                            item {
+                                SearchDiscoverySection(
+                                    title = state.discoverTitle,
+                                    list = state.discoverList,
+                                    onItemClick = {
+                                        viewModel.search(it)
+                                        keyboardController?.hide()
+                                    },
+                                    onRefresh = { /* TODO: Refresh logic */ }
                                 )
                             }
-                            Spacer(modifier = Modifier.height(12.dp))
                             
-                            //  热搜列表 (动态布局)
-                            val configuration = androidx.compose.ui.platform.LocalConfiguration.current
-                            val hotSearchColumns = if (configuration.screenWidthDp > 600) 4 else 2
-                            
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                state.hotList.take(20).chunked(hotSearchColumns).forEach { rowItems ->
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                    ) {
-                                        rowItems.forEachIndexed { indexInRow, hotItem ->
-                                            // 计算全局索引
-                                            val globalIndex = state.hotList.indexOf(hotItem)
-                                            val isTop3 = globalIndex < 3
-                                            
-                                            Row(
-                                                modifier = Modifier
-                                                    .weight(1f)
-                                                    .clickable { 
-                                                        viewModel.search(hotItem.keyword)
-                                                        keyboardController?.hide() 
-                                                    },
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                // 排名序号
-                                                Text(
-                                                    text = "${globalIndex + 1}",
-                                                    fontSize = 14.sp,
-                                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                                                    color = if (isTop3) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                                    modifier = Modifier.width(24.dp)
-                                                )
-                                                
-                                                // 标题
-                                                Text(
-                                                    text = hotItem.show_name,
-                                                    fontSize = 14.sp,
-                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                    maxLines = 1,
-                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                                )
-                                                
-                                                // "新"/"热" 标签 (如果有 icon 字段可以判断，这里简化)
-                                            }
-                                        }
-                                        // 如果不足一行，补空位占位
-                                        if (rowItems.size < hotSearchColumns) {
-                                            Spacer(modifier = Modifier.weight((hotSearchColumns - rowItems.size).toFloat()))
-                                        }
-                                    }
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(24.dp))
-                        }
-                    }
-                    
-                    if (state.historyList.isNotEmpty()) {
-                        item {
-                            Spacer(modifier = Modifier.height(24.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    "历史记录",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurface
+                            item {
+                                SearchHistorySection(
+                                    historyList = state.historyList,
+                                    onItemClick = {
+                                        viewModel.search(it)
+                                        keyboardController?.hide()
+                                    },
+                                    onClear = { viewModel.clearHistory() },
+                                    onDelete = { viewModel.deleteHistory(it) }
                                 )
-                                TextButton(onClick = { viewModel.clearHistory() }) {
-                                    Text("清空", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
-                                }
                             }
-                            Spacer(modifier = Modifier.height(8.dp))
                         }
                         
-                        //  气泡化历史记录
-                        item {
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                state.historyList.forEach { history ->
-                                    HistoryChip(
-                                        keyword = history.keyword,
-                                        onClick = { viewModel.search(history.keyword); keyboardController?.hide() },
-                                        onDelete = { viewModel.deleteHistory(history) }
-                                    )
-                                }
+                        // 右侧栏：热搜
+                        LazyColumn(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            contentPadding = PaddingValues(top = contentTopPadding + 16.dp, bottom = 16.dp, start = 12.dp, end = 24.dp)
+                        ) {
+                            item {
+                                SearchHotSection(
+                                    hotList = state.hotList,
+                                    onItemClick = {
+                                        viewModel.search(it)
+                                        keyboardController?.hide()
+                                    }
+                                )
                             }
+                        }
+                    }
+                } else {
+                    // 📱 手机单列布局
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .responsiveContentWidth()
+                            .hazeSource(state = hazeState),
+                        state = historyListState,
+                        contentPadding = PaddingValues(top = contentTopPadding + 16.dp, bottom = 16.dp, start = 16.dp, end = 16.dp)
+                    ) {
+                        item {
+                            SearchDiscoverySection(
+                                title = state.discoverTitle,
+                                list = state.discoverList,
+                                onItemClick = {
+                                    viewModel.search(it)
+                                    keyboardController?.hide()
+                                },
+                                onRefresh = { /* TODO: Refresh logic */ }
+                            )
+                        }
+
+                        item {
+                            SearchHotSection(
+                                hotList = state.hotList,
+                                onItemClick = {
+                                    viewModel.search(it)
+                                    keyboardController?.hide()
+                                }
+                            )
+                        }
+                        
+                        item {
+                            SearchHistorySection(
+                                historyList = state.historyList,
+                                onItemClick = {
+                                    viewModel.search(it)
+                                    keyboardController?.hide()
+                                },
+                                onClear = { viewModel.clearHistory() },
+                                onDelete = { viewModel.deleteHistory(it) }
+                            )
                         }
                     }
                 }
@@ -520,7 +440,6 @@ fun SearchScreen(
                 focusRequester = searchFocusRequester,  //  传递 focusRequester
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .responsiveContentWidth()
                     .unifiedBlur(
                         hazeState = hazeState
                     )
@@ -618,7 +537,7 @@ fun SearchTopBar(
 
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .responsiveContentWidth()
                     .height(64.dp)
                     .padding(horizontal = 12.dp, vertical = 8.dp)
                     .padding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal).asPaddingValues()),
@@ -804,27 +723,219 @@ fun QuickCategory(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
+            .clickable { onClick() }
             .padding(8.dp)
     ) {
-        Surface(
-            modifier = Modifier.size(48.dp),
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceVariant
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(emoji, fontSize = 22.sp)
-            }
-        }
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            label,
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Text(text = emoji, fontSize = 24.sp)
+        Text(text = label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
     }
 }
+
+// ============================================================================================
+// 📱 搜索模块组件提取 (用于平板适配)
+// ============================================================================================
+
+/**
+ * 💎 搜索发现 / 推荐板块
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun SearchDiscoverySection(
+    title: String,
+    list: List<String>,
+    onItemClick: (String) -> Unit,
+    onRefresh: () -> Unit
+) {
+    Column {
+        //  搜索发现 / 个性化推荐
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "💎",
+                    fontSize = 16.sp
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    title, //  使用动态标题
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            
+            // 刷新按钮
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .clickable { onRefresh() }
+                    .padding(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "换一换",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        
+        // 动态发现内容
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            list.forEach { keyword -> //  使用动态列表
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(6.dp),
+                    modifier = Modifier.clickable { onItemClick(keyword) }
+                ) {
+                    Text(
+                        keyword,
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+/**
+ * 🔥 热门搜索板块
+ */
+@Composable
+fun SearchHotSection(
+    hotList: List<HotItem>,
+    onItemClick: (String) -> Unit
+) {
+    if (hotList.isNotEmpty()) {
+        Column {
+            //  热搜标题
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "", // 🔥
+                    fontSize = 16.sp
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    "热门搜索",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            //  热搜列表 (动态布局)
+            val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+            // 在平板分栏布局中，右侧宽度可能较小，因此强制设为2列或自适应
+            val hotSearchColumns = if (configuration.screenWidthDp > 600) 2 else 2 // 调整为更保守的列数，或者依赖外部容器宽度
+            
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                hotList.take(20).chunked(2).forEach { rowItems -> // 强制每行2个以适应可能的窄列
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        rowItems.forEachIndexed { indexInRow, hotItem ->
+                            // 计算全局索引
+                            val globalIndex = hotList.indexOf(hotItem)
+                            val isTop3 = globalIndex < 3
+                            
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { onItemClick(hotItem.keyword) },
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // 排名序号
+                                Text(
+                                    text = "${globalIndex + 1}",
+                                    fontSize = 14.sp,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                    color = if (isTop3) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                    modifier = Modifier.width(24.dp)
+                                )
+                                
+                                // 标题
+                                Text(
+                                    text = hotItem.show_name,
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                        // 如果不足一行，补空位占位
+                        if (rowItems.size < 2) {
+                            Spacer(modifier = Modifier.weight((2 - rowItems.size).toFloat()))
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+/**
+ * 🕒 历史记录板块
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun SearchHistorySection(
+    historyList: List<SearchHistory>,
+    onItemClick: (String) -> Unit,
+    onClear: () -> Unit,
+    onDelete: (SearchHistory) -> Unit
+) {
+    if (historyList.isNotEmpty()) {
+        Column {
+            Spacer(modifier = Modifier.height(24.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "历史记录",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                TextButton(onClick = onClear) {
+                    Text("清空", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            //  气泡化历史记录
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                historyList.forEach { history ->
+                    HistoryChip(
+                        keyword = history.keyword,
+                        onClick = { onItemClick(history.keyword) },
+                        onDelete = { onDelete(history) }
+                    )
+                }
+            }
+        }
+    }
+}
+
 
 /**
  *  搜索筛选条件栏 (含类型切换)

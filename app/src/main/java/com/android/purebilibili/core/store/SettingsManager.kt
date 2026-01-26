@@ -1220,4 +1220,26 @@ object SettingsManager {
             }
         }
     }
+    private val KEY_PROFILE_BG_ALIGNMENT_MOBILE = floatPreferencesKey("profile_bg_alignment_mobile")
+    private val KEY_PROFILE_BG_ALIGNMENT_TABLET = floatPreferencesKey("profile_bg_alignment_tablet")
+
+    /**
+     * 获取个人中心背景图对齐方式 (竖向Bias: -1.0 Top ~ 1.0 Bottom, Default 0.0 Center)
+     * 分为移动端和平板端独立存储
+     */
+    fun getProfileBgAlignment(context: Context, isTablet: Boolean): Flow<Float> = context.settingsDataStore.data
+        .map { preferences -> 
+            if (isTablet) {
+                preferences[KEY_PROFILE_BG_ALIGNMENT_TABLET] ?: 0f
+            } else {
+                preferences[KEY_PROFILE_BG_ALIGNMENT_MOBILE] ?: 0f // 默认居中
+            }
+        }
+
+    suspend fun setProfileBgAlignment(context: Context, isTablet: Boolean, bias: Float) {
+        context.settingsDataStore.edit { preferences ->
+            val key = if (isTablet) KEY_PROFILE_BG_ALIGNMENT_TABLET else KEY_PROFILE_BG_ALIGNMENT_MOBILE
+            preferences[key] = bias.coerceIn(-1f, 1f)
+        }
+    }
 }

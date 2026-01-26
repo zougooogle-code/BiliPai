@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 //  Cupertino Icons - iOS SF Symbols 风格图标
 import io.github.alexzhirkevich.cupertino.icons.CupertinoIcons
 import io.github.alexzhirkevich.cupertino.icons.outlined.*
@@ -71,6 +72,7 @@ fun VideoPlayerSection(
     onBack: () -> Unit,
     // 🔗 [新增] 分享功能
     bvid: String = "",
+    coverUrl: String = "",
     //  实验性功能：双击点赞
     onDoubleTapLike: () -> Unit = {},
     //  空降助手
@@ -594,28 +596,101 @@ fun VideoPlayerSection(
         
 
         
-        // 1.5 封面图 (Cover Image) - 仅在未播放或缓冲且在开头时显示
-        if (uiState is PlayerUiState.Success) {
-            val showCover = !playerState.player.isPlaying && playerState.player.playbackState != Player.STATE_READY && playerState.player.playbackState != Player.STATE_ENDED || (isBuffering && playerState.player.currentPosition < 1000)
+    // --- [优化] 视频封面逻辑 ---
+    // 使用 isFirstFrameRendered 确保只有在第一帧真正渲染后才隐藏封面，防止黑屏
+    var isFirstFrameRendered by remember { mutableStateOf(false) }
+
+    DisposableEffect(playerState.player) {
+        val listener = object : Player.Listener {
+            override fun onRenderedFirstFrame() {
+                android.util.Log.d("VideoPlayerCover", "🎬 onRenderedFirstFrame triggered")
+                isFirstFrameRendered = true
+            }
             
-            AnimatedVisibility(
-                visible = showCover,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                AsyncImage(
-                    model = uiState.info.pic, // [修复] 使用 pic 字段
-                    contentDescription = null,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black)
-                )
+            // 兼容性：同时也监听 Events
+            override fun onEvents(player: Player, events: Player.Events) {
+                if (events.contains(Player.EVENT_RENDERED_FIRST_FRAME)) {
+                    android.util.Log.d("VideoPlayerCover", "🎬 EVENT_RENDERED_FIRST_FRAME triggered")
+                    isFirstFrameRendered = true
+                }
+            }
+
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == Player.STATE_ENDED) {
+                    // 播放结束显示重播状态（通常由上层逻辑处理，这里不复位封面以免闪烁）
+                    // isFirstFrameRendered = false 
+                }
             }
         }
+        
+        playerState.player.addListener(listener)
+        
+        // 初始化检查：如果播放器已经开始播放且有进度，可能错过了事件
+        // [Debug] Log initial check
+        if (playerState.player.isPlaying && playerState.player.currentPosition > 0) {
+             android.util.Log.d("VideoPlayerCover", "⚠️ Initial check: Already playing at ${playerState.player.currentPosition}, hiding cover. (Might be previous video?)")
+             isFirstFrameRendered = true
+        } else {
+             android.util.Log.d("VideoPlayerCover", "✅ Initial check: Not playing or at start. Keeping cover.")
+        }
 
-        // 2. DanmakuView (使用 ByteDance DanmakuRenderEngine - 覆盖在 PlayerView 上方)
-        android.util.Log.d("VideoPlayerSection", "🔍 DanmakuView check: isInPipMode=$isInPipMode, danmakuEnabled=$danmakuEnabled")
+        onDispose {
+            playerState.player.removeListener(listener)
+        }
+    }
+    
+    // 如果 bvid 改变，重置状态
+    LaunchedEffect(bvid) {
+        isFirstFrameRendered = false
+    }
+
+    // 4. 封面图 (Cover Image) - 始终在第一帧渲染前显示
+    // 优先使用 PlayerUiState.Success 中的高清封面 (pic)，否则使用传入的 coverUrl
+    var rawCoverUrl = if (uiState is PlayerUiState.Success) uiState.info.pic else coverUrl
+    
+    // [Fix] 强制使用 HTTPS，避免 cleartext traffic 限制导致图片无法加载
+    val currentCoverUrl = if (rawCoverUrl.startsWith("http://")) {
+        rawCoverUrl.replace("http://", "https://")
+    } else {
+        rawCoverUrl
+    }
+    
+    // [修改] 只要第一帧未渲染，就显示封面
+    // 增加额外检查：如果 buffering 且位置 > 1000ms，说明是中途缓冲，不需要显示封面(保持最后一帧)
+    val isInitialBuffering = isBuffering && playerState.player.currentPosition < 1000
+    val showCover = !isFirstFrameRendered || (isInitialBuffering && !isFirstFrameRendered)
+    
+    // [Debug] Logging
+    LaunchedEffect(showCover, currentCoverUrl, isFirstFrameRendered, uiState) {
+        android.util.Log.d("VideoPlayerCover", "🔍 Check: bvid=$bvid, showCover=$showCover, isFirstFrame=$isFirstFrameRendered, coverUrl=$coverUrl, finalUrl=$currentCoverUrl")
+    }
+
+    AnimatedVisibility(
+        visible = showCover && currentCoverUrl.isNotEmpty(),
+        enter = fadeIn(animationSpec = tween(200)),
+        exit = fadeOut(animationSpec = tween(300)), // 稍微慢一点消失，平滑过渡
+        modifier = Modifier.zIndex(10f) // [Fix] 强制提升层级，确保在 VideoSurface 之上
+    ) {
+        AsyncImage(
+            model = coil.request.ImageRequest.Builder(LocalContext.current)
+                .data(currentCoverUrl)
+                .listener(
+                    onStart = { android.util.Log.d("VideoPlayerCover", "🖼️ Image loading started: $currentCoverUrl") },
+                    onSuccess = { _, _ -> android.util.Log.d("VideoPlayerCover", "🖼️ Image loaded successfully") },
+                    onError = { _, result -> android.util.Log.e("VideoPlayerCover", "❌ Image load failed: ${result.throwable.message}", result.throwable) }
+                )
+                .crossfade(true)
+                .build(),
+            contentDescription = null,
+            contentScale = ContentScale.Crop, // [修改] 使用 Crop 填满屏幕
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+        )
+    }
+
+    // 2. DanmakuView (使用 ByteDance DanmakuRenderEngine - 覆盖在 PlayerView 上方)
+    android.util.Log.d("VideoPlayerSection", "🔍 DanmakuView check: isInPipMode=$isInPipMode, danmakuEnabled=$danmakuEnabled")
         if (!isInPipMode && danmakuEnabled && !isPortraitFullscreen) {
             android.util.Log.d("VideoPlayerSection", " Conditions met, creating DanmakuView...")
             //  计算状态栏高度

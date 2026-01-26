@@ -25,7 +25,11 @@ private val LightSurfaceVariant = Color(0xFFF1F2F3)
 private fun createDarkColorScheme(primaryColor: Color) = darkColorScheme(
     primary = primaryColor,
     onPrimary = White,
+    primaryContainer = primaryColor.copy(alpha = 0.3f), //  Container derived from primary
+    onPrimaryContainer = primaryColor.copy(alpha = 1f), // Stronger primary for content
     secondary = primaryColor.copy(alpha = 0.85f),
+    secondaryContainer = primaryColor.copy(alpha = 0.2f), //  Container derived from primary
+    onSecondaryContainer = primaryColor.copy(alpha = 0.9f),
     background = DarkBackground, // iOS User Interface Black
     surface = DarkSurface, // iOS System Gray 6 (Dark)
     onSurface = TextPrimaryDark,
@@ -39,7 +43,11 @@ private fun createDarkColorScheme(primaryColor: Color) = darkColorScheme(
 private fun createLightColorScheme(primaryColor: Color) = lightColorScheme(
     primary = primaryColor,
     onPrimary = White,
+    primaryContainer = primaryColor.copy(alpha = 0.15f), //  Container derived from primary (ligther for light mode)
+    onPrimaryContainer = primaryColor,
     secondary = primaryColor.copy(alpha = 0.8f),
+    secondaryContainer = primaryColor.copy(alpha = 0.1f), //  Container derived from primary
+    onSecondaryContainer = primaryColor,
     background = iOSSystemGray6, // Use iOS System Gray 6 for main background (grouped table view style)
     surface = White, // iOS cards are usually white
     onSurface = TextPrimary,

@@ -268,7 +268,7 @@ fun HomeScreen(
     // 故事卡片需要单列全宽，网格和玻璃使用双列，平板端使用多列
     val windowSizeClass = com.android.purebilibili.core.util.LocalWindowSizeClass.current
     val contentWidth = if (windowSizeClass.isExpandedScreen) {
-        minOf(windowSizeClass.widthDp, 1000.dp)
+        minOf(windowSizeClass.widthDp, 1280.dp)
     } else {
         windowSizeClass.widthDp
     }
@@ -667,8 +667,9 @@ fun HomeScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .then(
-                            if (useSideNavigation) {
-                                Modifier.responsiveContentWidth(maxWidth = 1000.dp)
+                            // [优化] 在所有宽屏模式下都应用内容宽度限制，增加呼吸感
+                            if (windowSizeClass.isExpandedScreen) {
+                                Modifier.responsiveContentWidth(maxWidth = 1280.dp)
                             } else {
                                 Modifier
                             }

@@ -182,8 +182,12 @@ fun AppNavigation(
         // 平板侧边栏模式 (替代 WindowSizeClass)
         val configuration = LocalConfiguration.current
         val screenWidthDp = configuration.screenWidthDp.dp
+        
+        // [修复] 平板模式下，仅当用户开启侧边栏设置时才使用侧边导航
+        val tabletUseSidebar by SettingsManager.getTabletUseSidebar(context).collectAsState(initial = false)
+        
         // Expanded width starts at 840dp according to Material Design 3
-        val useSideNavigation = screenWidthDp >= 840.dp
+        val useSideNavigation = screenWidthDp >= 840.dp && tabletUseSidebar
 
         // 仅在非侧边栏模式且是一级页面(或设置页及其子页面)时显示底栏 (短视频页面专门隐藏)
         val settingsRoutes = listOf(
@@ -361,7 +365,7 @@ fun AppNavigation(
             }
         ) { backStackEntry ->
             val bvid = backStackEntry.arguments?.getString("bvid") ?: ""
-            val coverUrl = backStackEntry.arguments?.getString("cover") ?: ""
+            val coverUrl = android.net.Uri.decode(backStackEntry.arguments?.getString("cover") ?: "")
             val startFullscreen = backStackEntry.arguments?.getBoolean("fullscreen") ?: false
             
             //  使用顶层定义的 cardTransitionEnabled（已在 line 68 定义）

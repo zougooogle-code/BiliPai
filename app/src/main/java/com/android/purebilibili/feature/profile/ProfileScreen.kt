@@ -62,6 +62,7 @@ import com.android.purebilibili.core.ui.components.IOSClickableItem
 import com.android.purebilibili.core.ui.components.IOSDivider
 import com.android.purebilibili.core.ui.components.IOSSwitchItem
 import com.android.purebilibili.core.ui.components.IOSSectionTitle
+import com.android.purebilibili.core.ui.components.IOSGridItem
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 
 import dev.chrisbanes.haze.HazeState
@@ -167,22 +168,28 @@ fun ProfileScreen(
                 topPhoto = currentUiState.topPhoto // [Modified] Use photo from state
             )
             
-            MobileProfileContent(
-                user = guestUser,
-                onLogout = onGoToLogin, // "退出登录" 变为 "登录"
-                onHistoryClick = onGoToLogin, // 游客点击功能需登录
-                onFavoriteClick = onGoToLogin,
-                onFollowingClick = { onGoToLogin() },
-                onDownloadClick = onGoToLogin,
-                onWatchLaterClick = onGoToLogin,
-                scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(),
-                onBack = onBack,
-                onSettingsClick = onSettingsClick,
-                hazeState = hazeState,
-                // [New] 传递点击头部去登录的回调 (需修改 MobileProfileContent 支持)
-                onHeaderClick = onGoToLogin,
-                paddingValues = PaddingValues(0.dp) // 全屏
-            )
+            
+            Box(modifier = Modifier.fillMaxSize()) {
+                ProfileBackground(user = guestUser, viewModel = viewModel)
+                
+                MobileProfileContent(
+                    user = guestUser,
+                    onLogout = onGoToLogin, // "退出登录" 变为 "登录"
+                    onHistoryClick = onGoToLogin, // 游客点击功能需登录
+                    onFavoriteClick = onGoToLogin,
+                    onFollowingClick = { onGoToLogin() },
+                    onDownloadClick = onGoToLogin,
+                    onWatchLaterClick = onGoToLogin,
+                    scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(),
+                    onBack = onBack,
+                    onSettingsClick = onSettingsClick,
+                    hazeState = hazeState,
+                    // [New] 传递点击头部去登录的回调 (需修改 MobileProfileContent 支持)
+                    onHeaderClick = onGoToLogin,
+                    paddingValues = PaddingValues(0.dp) // 全屏
+                )
+            }
+
         }
         is ProfileUiState.Error -> {
             // 🔧 [新增] 离线/错误状态 - 显示错误信息并提供重试和离线缓存入口
@@ -262,7 +269,7 @@ fun ProfileScreen(
                 // [Immersive] Mobile hides default TopBar, Tablet keeps it
                 topBar = {
                     if (windowSizeClass.shouldUseSplitLayout) {
-                         Box(
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .unifiedBlur(hazeState)
@@ -291,6 +298,9 @@ fun ProfileScreen(
                 contentWindowInsets = if (!windowSizeClass.shouldUseSplitLayout) WindowInsets(0.dp) else ScaffoldDefaults.contentWindowInsets
             ) { padding ->
                 Box(modifier = Modifier.fillMaxSize()) {
+                    // [Refactor] Lift background to root
+                    ProfileBackground(user = currentUiState.user, viewModel = viewModel)
+                    
                     if (windowSizeClass.shouldUseSplitLayout) {
                         TabletProfileContent(
                             user = currentUiState.user,
@@ -334,6 +344,88 @@ fun ProfileScreen(
     }
 }
 
+// [New] Reusable Background Component
+@Composable
+private fun BoxScope.ProfileBackground(
+    user: UserState,
+    viewModel: ProfileViewModel
+) {
+    val windowSizeClass = LocalWindowSizeClass.current
+    val isTablet = windowSizeClass.shouldUseSplitLayout
+    val isImmersive = user.topPhoto.isNotEmpty()
+    val bgAlignmentBias by viewModel.getProfileBgAlignment(isTablet).collectAsState(0f)
+
+    if (isImmersive) {
+        // 1. 底层：高斯模糊填充 (填补图片不够长的区域)
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(user.topPhoto)
+                .crossfade(true)
+                .build(),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxSize()
+                .blur(60.dp) // Android 12+ 原生模糊
+        )
+        
+        // 2. 顶层：清晰头部图 (Header Banner)
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(user.topPhoto)
+                .crossfade(true)
+                .build(),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            alignment = androidx.compose.ui.BiasAlignment(0f, bgAlignmentBias), // [New] Apply user alignment
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(320.dp) // [Modified] 增加高度以适应沉浸式 (260 -> 320)
+                .align(Alignment.TopCenter)
+        )
+        
+        // 3. 遮罩：渐变黑遮罩 (增加缓动层级)
+        val isDarkTheme = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+        val gradientColors = if (isDarkTheme) {
+             listOf(
+                Color.Black.copy(alpha = 0.6f),
+                Color.Black.copy(alpha = 0.3f),
+                Color.Transparent,
+                Color.Black.copy(alpha = 0.2f),
+                Color.Black.copy(alpha = 0.8f)
+            )
+        } else {
+             listOf(
+                Color.Black.copy(alpha = 0.3f), // Lighter top
+                Color.Black.copy(alpha = 0.1f),
+                Color.Transparent,
+                Color.Black.copy(alpha = 0.05f),
+                Color.Black.copy(alpha = 0.4f)  // Lighter bottom
+            )
+        }
+        
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = gradientColors,
+                        startY = 0f,
+                        endY = 1200f
+                    )
+                )
+        )
+    } else {
+         // 无背景图时使用默认渐变
+         Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surface)
+         )
+    }
+}
+
+
 @Composable
 fun TabletProfileContent(
     user: UserState,
@@ -355,7 +447,7 @@ fun TabletProfileContent(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surface)
+                    .background(Color.Transparent) // [Modified] Transparent for immersive bg
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -382,10 +474,20 @@ fun TabletProfileContent(
         },
         secondaryContent = {
             // Right Pane: Services
+            // [Modified] Glassy Background for Readability
+            // Detect theme via MaterialTheme properties
+            val isDarkTheme = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+            val glassContainerColor = if (isDarkTheme) Color.Black.copy(alpha = 0.3f) else Color.White.copy(alpha = 0.5f)
+            val glassBorderColor = if (isDarkTheme) Color.White.copy(alpha = 0.1f) else Color.White.copy(alpha = 0.4f)
+            val contentColor = if (isDarkTheme) Color.White else Color.Black
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
+                    .padding(16.dp) // Outer padding
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(glassContainerColor)
+                    .border(1.dp, glassBorderColor, RoundedCornerShape(32.dp))
                     .padding(24.dp)
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
@@ -393,19 +495,32 @@ fun TabletProfileContent(
                         text = "我的服务",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
+                        color = contentColor,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-                    ServicesSection(onHistoryClick, onFavoriteClick, onDownloadClick, onWatchLaterClick)
                     
-                    Spacer(modifier = Modifier.height(32.dp))
+                    // [Modified] Use new grid layout
+                    ServicesSection(
+                        onHistoryClick = onHistoryClick, 
+                        onFavoriteClick = onFavoriteClick, 
+                        onDownloadClick = onDownloadClick, 
+                        onWatchLaterClick = onWatchLaterClick,
+                        isTablet = true, // Force tablet mode
+                        containerColor = Color.Transparent, // Grid items handle bg
+                        contentColor = contentColor
+                    )
+                    
+                    Spacer(modifier = Modifier.weight(1f))
                     
                     Button(
                         onClick = onLogout,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f),
                             contentColor = MaterialTheme.colorScheme.onErrorContainer
                         ),
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .fillMaxWidth(0.5f) // Wide button
                     ) {
                         Text("退出登录")
                     }
@@ -436,13 +551,39 @@ fun MobileProfileContent(
     onHeaderClick: () -> Unit = {}, // [New] Support header click for guest login
     paddingValues: PaddingValues = PaddingValues(0.dp)
 ) {
+    val windowSizeClass = LocalWindowSizeClass.current
+    
     // 📸 图片选择器
+    // [New] Adjustment Sheet State
+    var showAdjustmentSheet by remember { mutableStateOf(false) }
+    var tempSelectedUri by remember { mutableStateOf<Uri?>(null) }
+    val initialMobileBias by viewModel.getProfileBgAlignment(false).collectAsState(0f)
+    val initialTabletBias by viewModel.getProfileBgAlignment(true).collectAsState(0f)
+
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
         if (uri != null) {
-            viewModel.updateCustomBackground(uri)
+            // [Modified] Don't save immediately, show adjustment sheet
+            tempSelectedUri = uri
+            showAdjustmentSheet = true
         }
+    }
+    
+    // [New] Adjustment Sheet
+    if (showAdjustmentSheet && tempSelectedUri != null) {
+        WallpaperAdjustmentSheet(
+            imageUri = tempSelectedUri.toString(),
+            initialMobileBias = initialMobileBias,
+            initialTabletBias = initialTabletBias,
+            onDismiss = { showAdjustmentSheet = false },
+            onSave = { mBias, tBias ->
+                showAdjustmentSheet = false
+                tempSelectedUri?.let { uri ->
+                    viewModel.updateCustomBackground(uri, mBias, tBias)
+                }
+            }
+        )
     }
     
     // [New] State for Official Wallpaper Sheet
@@ -456,80 +597,39 @@ fun MobileProfileContent(
     val isImmersive = user.topPhoto.isNotEmpty()
     val contentColor = if (isImmersive) Color.White else MaterialTheme.colorScheme.onSurface
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        // 🖼️ 背景图层
-        if (isImmersive) {
-            // 1. 底层：高斯模糊填充 (填补图片不够长的区域)
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(user.topPhoto)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .blur(60.dp) // Android 12+ 原生模糊
-            )
-            
-            // 2. 顶层：清晰头部图 (Header Banner)
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(user.topPhoto)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(320.dp) // [Modified] 增加高度以适应沉浸式 (260 -> 320)
-                    .align(Alignment.TopCenter)
-            )
-            
-            // 3. 遮罩：渐变黑遮罩 (增加缓动层级)
-            // [Adaptive] 浅色模式下减弱遮罩，深色模式保持深沉
-            // [Fix] Detect theme via MaterialTheme to support in-app theme switching
-            val isDarkTheme = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-            val gradientColors = if (isDarkTheme) {
-                 listOf(
-                    Color.Black.copy(alpha = 0.6f),
-                    Color.Black.copy(alpha = 0.3f),
-                    Color.Transparent,
-                    Color.Black.copy(alpha = 0.2f),
-                    Color.Black.copy(alpha = 0.8f)
-                )
-            } else {
-                 listOf(
-                    Color.Black.copy(alpha = 0.3f), // Lighter top
-                    Color.Black.copy(alpha = 0.1f),
-                    Color.Transparent,
-                    Color.Black.copy(alpha = 0.05f),
-                    Color.Black.copy(alpha = 0.4f)  // Lighter bottom
-                )
-            }
-            
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = gradientColors,
-                            startY = 0f,
-                            endY = 1200f
-                        )
-                    )
-            )
-        } else {
-             // 无背景图时使用默认渐变
-             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surface)
-             )
-        }
+        // [Modified] Background logic moved to ProfileBackground()
+        // No need to duplicate here, but MobileProfileContent is called separately in Split Layout?
+        // Ah, MobileProfileContent is independent. Let's keep it simple: 
+        // Remove background rendering from here since it's now at root?
+        // NO, MobileProfileContent is used in the "else" branch of Scaffold content.
+        // If we move background to root, it covers everything.
+        // So we should REMOVE the background logic from here.
+        
+        // However, ProfileBackground checks user.topPhoto.
+        // MobileProfileContent already has `isImmersive`.
+        // Let's remove the background rendering here.
+        // BUT wait, MobileProfileContent is used in LoggedOut state too, where ProfileScreen wrapper might not have user info?
+        // LoggedOut wrapper passes guestUser to MobileProfileContent.
+        // So ProfileBackground at root should prefer `currentUiState.user` or fallback?
+        // ProfileUiState.LoggedOut also has topPhoto. 
+        // The root Scaffold logic handles Success state. 
+        // LoggedOut state uses MobileProfileContent directly without Scaffold in "when (currentUiState)".
+        // So for LoggedOut, we still need background here, OR wrap LoggedOut in ProfileBackground too.
+        
+        // Let's keep duplicate logic for now (safest) OR refactor LoggedOut to use ProfileBackground?
+        // Refactoring LoggedOut is better but complex.
+        // Let's simply hide the background here IF the parent is already rendering it?
+        // No, ProfileScreen calls MobileProfileContent only when !shouldUseSplitLayout.
+        // And we added ProfileBackground in the Success branch main Box.
+        // So for Mobile + Success, we have double background if we don't remove it here.
+        // YES, remove background here.
 
-        // 📜 滚动内容
-        LazyColumn(
+
+        // YES, remove background here.
+        
+        Box(modifier = Modifier.fillMaxSize()) {
+            // 📜 滚动内容
+            LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .then(if (hazeState != null) Modifier.hazeSource(hazeState) else Modifier),
@@ -997,8 +1097,51 @@ fun ServicesSection(
     containerColor: Color = MaterialTheme.colorScheme.surface,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
     borderColor: Color? = null,
-    isLogin: Boolean = true // [New]
+    isLogin: Boolean = true,
+    isTablet: Boolean = false // [New]
 ) {
+    if (isTablet) {
+        // [New] Grid Layout for Tablet
+        val items = listOf(
+            Triple("离线缓存", CupertinoIcons.Default.ArrowDownCircle, onDownloadClick),
+            Triple("历史记录", CupertinoIcons.Default.Clock, onHistoryClick),
+            Triple("我的收藏", CupertinoIcons.Default.Bookmark, onFavoriteClick),
+            Triple("稍后再看", CupertinoIcons.Default.Bookmark, onWatchLaterClick)
+        )
+        
+        // Simple Grid implementation since LazyVerticalGrid might be overkill inside a Column if not scrolling?
+        // But tablet right pane has plenty space.
+        // Let's use FlowRow for auto-wrapping or a simple Row/Column combo.
+        // Actually, since it's a fixed list, a hardcoded Row/Column grid is safer than LazyGrid inside Scrollable.
+        
+        // 2 columns x N rows
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            items.chunked(2).forEach { rowItems ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    rowItems.forEach { (title, icon, onClick) ->
+                        IOSGridItem(
+                            icon = icon,
+                            title = title,
+                            onClick = onClick,
+                            iconTint = contentColor, // Use content color for icon in this mode?
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f), // Slightly distinct background
+                            contentColor = contentColor,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    // Fill empty space if odd number
+                    if (rowItems.size < 2) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+
+    } else {
+        // [Original] List Layout for Mobile
     // [Modified] 移除标题，纯净悬浮岛风格 (Option 3)
     // IOSSectionTitle("我的服务")
     
@@ -1059,5 +1202,6 @@ fun ServicesSection(
                 showChevron = false
             )
         }
+    }
     }
 }

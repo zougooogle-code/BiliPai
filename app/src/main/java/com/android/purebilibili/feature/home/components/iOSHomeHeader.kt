@@ -170,35 +170,46 @@ fun iOSHomeHeader(
             Spacer(modifier = Modifier.width(8.dp))
             
             // Search Box
+            // [优化] 外层容器用于居中，内层容器限制最大宽度 (640dp)
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .height(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
-                    .clickable { 
-                        haptic(HapticType.LIGHT)
-                        onSearchClick() 
-                    }
-                    .padding(horizontal = 12.dp),
-                contentAlignment = Alignment.CenterStart
+                    .height(36.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        CupertinoIcons.Default.MagnifyingGlass,
-                        contentDescription = "搜索",
-                        tint = iOSSystemGray,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "搜索视频、UP主...",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = iOSSystemGray,
-                        maxLines = 1
-                    )
+                Box(
+                    modifier = Modifier
+                        .widthIn(max = 640.dp)
+                        .fillMaxWidth()
+                        .height(36.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                        .clickable { 
+                            haptic(HapticType.LIGHT)
+                            onSearchClick() 
+                        }
+                        .padding(horizontal = 12.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            CupertinoIcons.Default.MagnifyingGlass,
+                            contentDescription = "搜索",
+                            tint = iOSSystemGray,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        // [优化] 响应式字体大小
+                        val isTablet = com.android.purebilibili.core.util.LocalWindowSizeClass.current.isTablet
+                        Text(
+                            text = "搜索视频、UP主...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontSize = if (isTablet) 16.sp else 15.sp,
+                            fontWeight = FontWeight.Normal,
+                            color = iOSSystemGray,
+                            maxLines = 1
+                        )
+                    }
                 }
             }
             

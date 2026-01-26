@@ -581,6 +581,7 @@ fun VideoDetailScreen(
                 onBack = { toggleFullscreen() },
                 // 🔗 [新增] 分享功能
                 bvid = bvid,
+                coverUrl = coverUrl,
                 //  实验性功能：双击点赞
                 onDoubleTapLike = { viewModel.toggleLike() },
                 //  [新增] 重载视频
@@ -630,8 +631,10 @@ fun VideoDetailScreen(
                         configuration = configuration,
                         isVerticalVideo = isVerticalVideo,
                         sleepTimerMinutes = sleepTimerMinutes,
+
                         viewPoints = viewPoints,
                         bvid = bvid,
+                        coverUrl = coverUrl,
                         onBack = {
                             // 📱 手机误入平板模式（如横屏宽度触发 Expanded），点击返回应切换回竖屏
                             // 🔧 [修复] 检查 smallestScreenWidthDp 确保这不是真正的平板
@@ -763,6 +766,7 @@ fun VideoDetailScreen(
                                 onBack = handleBack,
                                 // 🔗 [新增] 分享功能
                                 bvid = bvid,
+                                coverUrl = coverUrl,
                                 onDoubleTapLike = { viewModel.toggleLike() },
                                 //  [新增] 重载视频
                                 onReloadVideo = { viewModel.reloadVideo() },

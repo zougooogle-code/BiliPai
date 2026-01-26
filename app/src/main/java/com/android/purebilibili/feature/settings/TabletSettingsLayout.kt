@@ -144,7 +144,7 @@ fun TabletSettingsLayout(
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 SettingsCategory.entries.forEach { category ->
-                    val isSelected = category == selectedCategory
+                            val isSelected = category == selectedCategory
                     NavigationDrawerItem(
                         label = { Text(category.title) },
                         selected = isSelected,
@@ -162,7 +162,9 @@ fun TabletSettingsLayout(
                         modifier = Modifier.padding(vertical = 4.dp),
                         colors = NavigationDrawerItemDefaults.colors(
                             selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            unselectedContainerColor = Color.Transparent
+                            unselectedContainerColor = Color.Transparent,
+                            selectedTextColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                     )
                 }

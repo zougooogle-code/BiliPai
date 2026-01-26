@@ -38,6 +38,7 @@ import io.github.alexzhirkevich.cupertino.icons.CupertinoIcons
 import io.github.alexzhirkevich.cupertino.icons.outlined.ChevronBackward
 import io.github.alexzhirkevich.cupertino.icons.outlined.Info
 import io.github.alexzhirkevich.cupertino.icons.filled.CheckmarkCircle
+import com.android.purebilibili.core.ui.animation.staggeredEntrance
 
 /**
  *  应用图标设置二级页面
@@ -140,6 +141,9 @@ fun IconSettingsContent(
     context: android.content.Context,
     iconGroups: List<IconGroup>
 ) {
+    var isVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { isVisible = true }
+    
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 100.dp),
         contentPadding = PaddingValues(

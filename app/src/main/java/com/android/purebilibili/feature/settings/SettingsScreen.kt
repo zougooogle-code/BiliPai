@@ -37,6 +37,7 @@ import io.github.alexzhirkevich.cupertino.icons.outlined.*
 import kotlinx.coroutines.launch
 
 import com.android.purebilibili.core.ui.components.IOSSectionTitle
+import com.android.purebilibili.core.ui.animation.staggeredEntrance
 
 const val GITHUB_URL = "https://github.com/jay3-yy/BiliPai/"
 
@@ -385,6 +386,14 @@ private fun MobileSettingsLayout(
     feedApiType: SettingsManager.FeedApiType,
     onFeedApiTypeChange: (SettingsManager.FeedApiType) -> Unit
 ) {
+    val context = LocalContext.current
+    
+    // Animation Trigger
+    var isVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        isVisible = true
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -414,55 +423,97 @@ private fun MobileSettingsLayout(
                 bottom = 100.dp 
             )
         ) {
-            item { IOSSectionTitle("关注作者") }
             item { 
-                FollowAuthorSection(onTelegramClick, onTwitterClick)  
+                Box(modifier = Modifier.staggeredEntrance(0, isVisible)) {
+                    IOSSectionTitle("关注作者") 
+                }
+            }
+            item { 
+                Box(modifier = Modifier.staggeredEntrance(1, isVisible)) {
+                    FollowAuthorSection(onTelegramClick, onTwitterClick)  
+                }
             }
             
-            item { IOSSectionTitle("常规") }
             item { 
-                GeneralSection(
-                    onAppearanceClick = onAppearanceClick,
-                    onPlaybackClick = onPlaybackClick,
-                    onBottomBarClick = onNavigateToBottomBarSettings
-                )
+                Box(modifier = Modifier.staggeredEntrance(2, isVisible)) {
+                    IOSSectionTitle("常规") 
+                }
+            }
+            item { 
+                Box(modifier = Modifier.staggeredEntrance(3, isVisible)) {
+                    GeneralSection(
+                        onAppearanceClick = onAppearanceClick,
+                        onPlaybackClick = onPlaybackClick,
+                        onBottomBarClick = onNavigateToBottomBarSettings
+                    )
+                }
             }
             
-            item { IOSSectionTitle("推荐流") }
             item { 
-                FeedApiSection(
-                    feedApiType = feedApiType,
-                    onFeedApiTypeChange = onFeedApiTypeChange
-                )
+                Box(modifier = Modifier.staggeredEntrance(4, isVisible)) {
+                    IOSSectionTitle("推荐流") 
+                }
+            }
+            item { 
+                Box(modifier = Modifier.staggeredEntrance(5, isVisible)) {
+                    FeedApiSection(
+                        feedApiType = feedApiType,
+                        onFeedApiTypeChange = onFeedApiTypeChange
+                    )
+                }
             }
             
-            item { IOSSectionTitle("隐私与安全") }
             item { 
-                PrivacySection(privacyModeEnabled, onPrivacyModeChange, onPermissionClick)
+                Box(modifier = Modifier.staggeredEntrance(6, isVisible)) {
+                    IOSSectionTitle("隐私与安全") 
+                }
+            }
+            item { 
+                Box(modifier = Modifier.staggeredEntrance(7, isVisible)) {
+                    PrivacySection(privacyModeEnabled, onPrivacyModeChange, onPermissionClick)
+                }
             }
             
-            item { IOSSectionTitle("数据与存储") }
             item { 
-                DataStorageSection(customDownloadPath, cacheSize, onDownloadPathClick, onClearCacheClick)
+                Box(modifier = Modifier.staggeredEntrance(8, isVisible)) {
+                    IOSSectionTitle("数据与存储") 
+                }
+            }
+            item { 
+                Box(modifier = Modifier.staggeredEntrance(9, isVisible)) {
+                    DataStorageSection(customDownloadPath, cacheSize, onDownloadPathClick, onClearCacheClick)
+                }
             }
             
-            item { IOSSectionTitle("开发者选项") }
+            item { 
+                Box(modifier = Modifier.staggeredEntrance(10, isVisible)) {
+                    IOSSectionTitle("开发者选项") 
+                }
+            }
             item {
-                DeveloperSection(
-                    crashTrackingEnabled, analyticsEnabled, pluginCount,
-                    onCrashTrackingChange, onAnalyticsChange,
-                    onPluginsClick, onExportLogsClick
-                )
+                Box(modifier = Modifier.staggeredEntrance(11, isVisible)) {
+                    DeveloperSection(
+                        crashTrackingEnabled, analyticsEnabled, pluginCount,
+                        onCrashTrackingChange, onAnalyticsChange,
+                        onPluginsClick, onExportLogsClick
+                    )
+                }
             }
             
-            item { IOSSectionTitle("关于") }
+            item { 
+                Box(modifier = Modifier.staggeredEntrance(12, isVisible)) {
+                    IOSSectionTitle("关于") 
+                }
+            }
             item {
-                AboutSection(
-                    versionName, easterEggEnabled,
-                    onLicenseClick, onGithubClick,
-                    onVersionClick, onReplayOnboardingClick,
-                    onEasterEggChange
-                )
+                Box(modifier = Modifier.staggeredEntrance(13, isVisible)) {
+                    AboutSection(
+                        versionName, easterEggEnabled,
+                        onLicenseClick, onGithubClick,
+                        onVersionClick, onReplayOnboardingClick,
+                        onEasterEggChange
+                    )
+                }
             }
             
             item { Spacer(modifier = Modifier.height(32.dp)) }

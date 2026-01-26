@@ -153,7 +153,8 @@ fun FrostedBottomBar(
     onToggleSidebar: (() -> Unit)? = null  // 📱 [平板适配] 切换到侧边栏
 ) {
     val isDarkTheme = MaterialTheme.colorScheme.background.red < 0.5f
-    val haptic = rememberHapticFeedback()  //  触觉反馈
+    val haptic = rememberHapticFeedback()
+    // [Removed duplicate isTablet declaration]
     
     // 🔒 [防抖] 防止快速点击导致页面重复加载
     var lastClickTime by remember { mutableStateOf(0L) }
@@ -473,7 +474,7 @@ private fun BottomBarContent(
                 }
                 if (labelMode == 0) {
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text(text = "侧边栏", style = MaterialTheme.typography.labelSmall, color = iconColor, fontWeight = FontWeight.Medium, fontSize = 10.sp)
+                    Text(text = "侧边栏", style = MaterialTheme.typography.labelSmall, color = iconColor, fontWeight = FontWeight.Medium, fontSize = if (isTablet) 12.sp else 10.sp)
                 }
             }
         }
@@ -501,7 +502,8 @@ private fun BottomBarContent(
                 hazeState = hazeState,
                 haptic = haptic,
                 debounceClick = debounceClick,
-                onHomeDoubleTap = onHomeDoubleTap
+                onHomeDoubleTap = onHomeDoubleTap,
+                isTablet = isTablet
             )
         }
     }
@@ -522,7 +524,8 @@ private fun BottomBarItem(
     hazeState: HazeState?,
     haptic: (HapticType) -> Unit,
     debounceClick: (BottomNavItem, () -> Unit) -> Unit,
-    onHomeDoubleTap: () -> Unit
+    onHomeDoubleTap: () -> Unit,
+    isTablet: Boolean
 ) {
     var isPending by remember { mutableStateOf(false) }
     
@@ -661,7 +664,7 @@ private fun BottomBarItem(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = item.label,
-                    fontSize = 10.sp,
+                    fontSize = if (isTablet) 12.sp else 10.sp,
                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
                     color = iconColor
                 )
@@ -669,7 +672,7 @@ private fun BottomBarItem(
             2 -> { // Text Only
                 Text(
                     text = item.label,
-                    fontSize = 14.sp,
+                    fontSize = if (isTablet) 16.sp else 14.sp,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     color = iconColor,
                     modifier = Modifier.graphicsLayer {

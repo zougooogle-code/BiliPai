@@ -20,6 +20,8 @@ import io.github.alexzhirkevich.cupertino.icons.CupertinoIcons
 import io.github.alexzhirkevich.cupertino.icons.outlined.*
 import kotlinx.coroutines.launch
 import com.android.purebilibili.core.ui.components.*
+import com.android.purebilibili.core.ui.animation.staggeredEntrance
+import kotlinx.coroutines.delay
 
 /**
  *  动画与效果设置二级页面
@@ -79,99 +81,126 @@ fun AnimationSettingsContent(
     state: SettingsUiState,
     viewModel: SettingsViewModel
 ) {
+    var isVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { isVisible = true }
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = WindowInsets.navigationBars.asPaddingValues()
     ) {
             
             //  卡片动画
-            item { IOSSectionTitle("卡片动画") }
+            //  卡片动画
             item {
-                IOSGroup {
-                    IOSSwitchItem(
-                        icon = CupertinoIcons.Default.WandAndStars,
-                        title = "进场动画",
-                        subtitle = "首页视频卡片的入场动画效果",
-                        checked = state.cardAnimationEnabled,
-                        onCheckedChange = { viewModel.toggleCardAnimation(it) },
-                        iconTint = iOSPink
-                    )
-                    Divider()
-                    IOSSwitchItem(
-                        icon = CupertinoIcons.Default.ArrowLeftArrowRight,
-                        title = "过渡动画",
-                        subtitle = "点击卡片时的共享元素过渡效果",
-                        checked = state.cardTransitionEnabled,
-                        onCheckedChange = { viewModel.toggleCardTransition(it) },
-                        iconTint = iOSTeal
-                    )
+                Box(modifier = Modifier.staggeredEntrance(0, isVisible)) {
+                    IOSSectionTitle("卡片动画")
                 }
             }
-            
-            // ✨ 磨砂效果
-            item { IOSSectionTitle("磨砂效果") }
             item {
-                IOSGroup {
-                    IOSSwitchItem(
-                        icon = CupertinoIcons.Default.Sparkles,
-                        title = "底栏磨砂",
-                        subtitle = "底部导航栏的毛玻璃模糊效果",
-                        checked = state.bottomBarBlurEnabled,
-                        onCheckedChange = { viewModel.toggleBottomBarBlur(it) },
-                        iconTint = iOSBlue
-                    )
-                    
-                    // 模糊强度（仅在开启时显示）
-                    if (state.bottomBarBlurEnabled) {
+                Box(modifier = Modifier.staggeredEntrance(1, isVisible)) {
+                    IOSGroup {
+                        IOSSwitchItem(
+                            icon = CupertinoIcons.Default.WandAndStars,
+                            title = "进场动画",
+                            subtitle = "首页视频卡片的入场动画效果",
+                            checked = state.cardAnimationEnabled,
+                            onCheckedChange = { viewModel.toggleCardAnimation(it) },
+                            iconTint = iOSPink
+                        )
                         Divider()
-                        BlurIntensitySelector(
-                            selectedIntensity = state.blurIntensity,
-                            onIntensityChange = { viewModel.setBlurIntensity(it) }
+                        IOSSwitchItem(
+                            icon = CupertinoIcons.Default.ArrowLeftArrowRight,
+                            title = "过渡动画",
+                            subtitle = "点击卡片时的共享元素过渡效果",
+                            checked = state.cardTransitionEnabled,
+                            onCheckedChange = { viewModel.toggleCardTransition(it) },
+                            iconTint = iOSTeal
                         )
                     }
                 }
             }
             
-            // 📐 底栏样式
-            item { IOSSectionTitle("底栏样式") }
+            // ✨ 磨砂效果
+            // ✨ 磨砂效果
             item {
-                IOSGroup {
-                    IOSSwitchItem(
-                        icon = CupertinoIcons.Default.RectangleStack,
-                        title = "悬浮底栏",
-                        subtitle = "关闭后底栏将沉浸式贴底显示",
-                        checked = state.isBottomBarFloating,
-                        onCheckedChange = { viewModel.toggleBottomBarFloating(it) },
-                        iconTint = iOSPurple
-                    )
+                Box(modifier = Modifier.staggeredEntrance(2, isVisible)) {
+                    IOSSectionTitle("磨砂效果")
+                }
+            }
+            item {
+                Box(modifier = Modifier.staggeredEntrance(3, isVisible)) {
+                    IOSGroup {
+                        IOSSwitchItem(
+                            icon = CupertinoIcons.Default.Sparkles,
+                            title = "底栏磨砂",
+                            subtitle = "底部导航栏的毛玻璃模糊效果",
+                            checked = state.bottomBarBlurEnabled,
+                            onCheckedChange = { viewModel.toggleBottomBarBlur(it) },
+                            iconTint = iOSBlue
+                        )
+                        
+                        // 模糊强度（仅在开启时显示）
+                        if (state.bottomBarBlurEnabled) {
+                            Divider()
+                            BlurIntensitySelector(
+                                selectedIntensity = state.blurIntensity,
+                                onIntensityChange = { viewModel.setBlurIntensity(it) }
+                            )
+                        }
+                    }
+                }
+            }
+            
+            // 📐 底栏样式
+            // 📐 底栏样式
+            item {
+                Box(modifier = Modifier.staggeredEntrance(4, isVisible)) {
+                    IOSSectionTitle("底栏样式")
+                }
+            }
+            item {
+                Box(modifier = Modifier.staggeredEntrance(5, isVisible)) {
+                    IOSGroup {
+                        IOSSwitchItem(
+                            icon = CupertinoIcons.Default.RectangleStack,
+                            title = "悬浮底栏",
+                            subtitle = "关闭后底栏将沉浸式贴底显示",
+                            checked = state.isBottomBarFloating,
+                            onCheckedChange = { viewModel.toggleBottomBarFloating(it) },
+                            iconTint = iOSPurple
+                        )
+                    }
                 }
             }
             
             //  提示
+            //  提示
             item {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                Box(modifier = Modifier.staggeredEntrance(6, isVisible)) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                     ) {
-                        Icon(
-                            CupertinoIcons.Default.Lightbulb,
-                            contentDescription = null,
-                            tint = iOSOrange,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = "关闭动画可以减少电量消耗，提升流畅度",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                CupertinoIcons.Default.Lightbulb,
+                                contentDescription = null,
+                                tint = iOSOrange,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "关闭动画可以减少电量消耗，提升流畅度",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }

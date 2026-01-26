@@ -43,16 +43,25 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
 
     fun loadProfile() {
         viewModelScope.launch {
+            var customBgUri = ""
             try {
                 // 0. [New] 始终并行读取本地自定义背景设置 (即使未登录也需要背景)
                 // 使用 first() 获取当前值
-                val customBgUri = try {
+                customBgUri = try {
                     SettingsManager.getProfileBgUri(getApplication()).first() ?: ""
                 } catch (e: Exception) { "" }
 
                 // 1. 检查本地是否有 Token
                 if (TokenManager.sessDataCache.isNullOrEmpty()) {
-                    _uiState.value = ProfileUiState.LoggedOut(topPhoto = customBgUri)
+                    // [Fix] Add timestamp for LoggedOut state too
+                    val finalUri = if (customBgUri.startsWith("file://")) {
+                        try {
+                            val file = File(Uri.parse(customBgUri).path ?: "")
+                            if (file.exists()) "$customBgUri?t=${file.lastModified()}" else customBgUri
+                        } catch (e: Exception) { customBgUri }
+                    } else customBgUri
+                    
+                    _uiState.value = ProfileUiState.LoggedOut(topPhoto = finalUri)
                     return@launch
                 }
 
@@ -86,7 +95,20 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 if (data != null && data.isLogin) {
                     // 优先使用本地自定义背景，否则使用 API 返回的 top_photo
                     val finalTopPhoto = if (customBgUri.isNotEmpty()) {
-                        customBgUri
+                         // [Fix] Add timestamp to bust Coil cache for local files
+                        if (customBgUri.startsWith("file://")) {
+                            try {
+                                val uri = Uri.parse(customBgUri)
+                                val file = File(uri.path ?: "")
+                                if (file.exists()) {
+                                    "$customBgUri?t=${file.lastModified()}"
+                                } else customBgUri
+                            } catch (e: Exception) {
+                                customBgUri
+                            }
+                        } else {
+                            customBgUri
+                        }
                     } else {
                         data.top_photo
                     }
@@ -128,7 +150,14 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                     _uiState.value = ProfileUiState.Error("加载失败，点击重试")
                 } else {
                     // 无 Token → 显示未登录
-                    _uiState.value = ProfileUiState.LoggedOut(topPhoto = "") 
+                    // [Fix] Add timestamp for LoggedOut state
+                    val finalUri = if (customBgUri.startsWith("file://")) {
+                        try {
+                            val file = File(Uri.parse(customBgUri).path ?: "")
+                            if (file.exists()) "$customBgUri?t=${file.lastModified()}" else customBgUri
+                        } catch (e: Exception) { customBgUri }
+                    } else customBgUri
+                    _uiState.value = ProfileUiState.LoggedOut(topPhoto = finalUri) 
                 }
             }
         }
@@ -138,10 +167,18 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
      * 更新自定义背景图
      * 将选中的图片复制到应用私有目录，并更新设置
      */
-    fun updateCustomBackground(uri: Uri) {
+    fun updateCustomBackground(
+        uri: Uri, 
+        mobileBias: Float = 0f, 
+        tabletBias: Float = 0f
+    ) {
         viewModelScope.launch {
             try {
                 val context = getApplication<Application>()
+                
+                SettingsManager.setProfileBgAlignment(context, false, mobileBias)
+                SettingsManager.setProfileBgAlignment(context, true, tabletBias)
+                
                 // 1. 创建图片保存目录
                 val imagesDir = File(context.filesDir, "images")
                 if (!imagesDir.exists()) imagesDir.mkdirs()
@@ -271,11 +308,27 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     /**
      * 保存壁纸 (下载并设置为背景)
      */
-    fun saveWallpaper(url: String, onComplete: () -> Unit = {}) {
+    // [New] Alignment State
+    fun getProfileBgAlignment(isTablet: Boolean) = SettingsManager.getProfileBgAlignment(getApplication(), isTablet)
+
+    /**
+     * 保存壁纸 (下载并设置为背景)
+     * 支持传入对齐参数
+     */
+    fun saveWallpaper(
+        url: String, 
+        mobileBias: Float = 0f, 
+        tabletBias: Float = 0f,
+        onComplete: () -> Unit = {}
+    ) {
         viewModelScope.launch(Dispatchers.IO) {
             _wallpaperSaveState.value = WallpaperSaveState.Loading
             try {
+                // 保存对齐设置
                 val context = getApplication<Application>()
+                SettingsManager.setProfileBgAlignment(context, false, mobileBias)
+                SettingsManager.setProfileBgAlignment(context, true, tabletBias)
+                
                 // 修复 URL 协议 (强制 HTTPS)
                 var finalUrl = url
                 if (finalUrl.startsWith("//")) {

@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.android.purebilibili.core.ui.components.*
+import com.android.purebilibili.core.ui.animation.staggeredEntrance
 import com.android.purebilibili.core.theme.iOSPink  // 存储权限图标色
 import com.android.purebilibili.core.theme.iOSBlue
 import com.android.purebilibili.core.theme.iOSGreen
@@ -165,6 +166,7 @@ fun PermissionSettingsContent(
     
     // 检查权限状态
     var permissionStates by remember { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
+    var isVisible by remember { mutableStateOf(false) }
     
     LaunchedEffect(Unit) {
         permissionStates = permissions.associate { info ->
@@ -174,6 +176,7 @@ fun PermissionSettingsContent(
                 ContextCompat.checkSelfPermission(context, info.permission) == PackageManager.PERMISSION_GRANTED
             }
         }
+        isVisible = true
     }
     val grantedCount = permissions.count { info ->
         info.alwaysGranted || permissionStates[info.permission] == true
@@ -190,82 +193,101 @@ fun PermissionSettingsContent(
     ) {
 
             
+            
             // 说明文字
             item {
-                Text(
-                    text = "以下是应用所需的权限及其用途说明。普通权限在安装时自动授予，无需手动操作。",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-                )
+                Box(modifier = Modifier.staggeredEntrance(0, isVisible)) {
+                    Text(
+                        text = "以下是应用所需的权限及其用途说明。普通权限在安装时自动授予，无需手动操作。",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                    )
+                }
             }
             
             // 需要运行时请求的权限
             item {
-                IOSSectionTitle("需要授权的权限")
+                Box(modifier = Modifier.staggeredEntrance(1, isVisible)) {
+                    IOSSectionTitle("需要授权的权限")
+                }
             }
             item {
-                IOSGroup {
-                    permissions.filter { !it.isNormal }.forEachIndexed { index, info ->
-                        if (index > 0) Divider()
-                        PermissionItem(
-                            info = info,
-                            isGranted = permissionStates[info.permission] ?: false,
-                            onOpenSettings = {
-                                openAppSettings(context)
-                            }
-                        )
+                Box(modifier = Modifier.staggeredEntrance(2, isVisible)) {
+                    IOSGroup {
+                        permissions.filter { !it.isNormal }.forEachIndexed { index, info ->
+                            if (index > 0) Divider()
+                            PermissionItem(
+                                info = info,
+                                isGranted = permissionStates[info.permission] ?: false,
+                                onOpenSettings = {
+                                    openAppSettings(context)
+                                }
+                            )
+                        }
                     }
                 }
             }
             
             // 普通权限（自动授予）
             item {
-                IOSSectionTitle("自动授予的权限")
+                Box(modifier = Modifier.staggeredEntrance(3, isVisible)) {
+                    IOSSectionTitle("自动授予的权限")
+                }
             }
             item {
-                IOSGroup {
-                    permissions.filter { it.isNormal }.forEachIndexed { index, info ->
-                        if (index > 0) Divider()
-                        PermissionItem(
-                            info = info,
-                            isGranted = true,
-                            onOpenSettings = null
-                        )
+                Box(modifier = Modifier.staggeredEntrance(4, isVisible)) {
+                    IOSGroup {
+                        permissions.filter { it.isNormal }.forEachIndexed { index, info ->
+                            if (index > 0) Divider()
+                            PermissionItem(
+                                info = info,
+                                isGranted = true,
+                                onOpenSettings = null
+                            )
+                        }
                     }
                 }
             }
             
             // 打开系统设置按钮
             item {
-                Spacer(modifier = Modifier.height(24.dp))
-                Button(
-                    onClick = { openAppSettings(context) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(
-                        CupertinoIcons.Default.SquareAndArrowUp,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("打开系统设置")
+                Box(modifier = Modifier.staggeredEntrance(5, isVisible)) {
+                    Column {
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Button(
+                            onClick = { openAppSettings(context) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(
+                                CupertinoIcons.Default.SquareAndArrowUp,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("打开系统设置")
+                        }
+                    }
                 }
             }
             
             // 隐私说明
             item {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = " BiliPai 尊重您的隐私，不会请求位置、相机、通讯录等敏感权限。",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
+                Box(modifier = Modifier.staggeredEntrance(6, isVisible)) {
+                    Column {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = " BiliPai 尊重您的隐私，不会请求位置、相机、通讯录等敏感权限。",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                    }
+                }
             }
         }
     }

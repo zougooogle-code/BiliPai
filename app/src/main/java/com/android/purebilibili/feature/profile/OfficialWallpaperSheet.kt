@@ -235,14 +235,35 @@ fun OfficialWallpaperSheet(
                     ) {
                         // Set as Profile Background
                         val context = LocalContext.current
+                        
+                        // [New] Adjustment Sheet Logic
+                        var showAdjustmentSheet by remember { mutableStateOf(false) }
+                        val initialMobileBias by viewModel.getProfileBgAlignment(false).collectAsState(0f)
+                        val initialTabletBias by viewModel.getProfileBgAlignment(true).collectAsState(0f)
+                        
+                        // [New] Adjustment Sheet
+                         if (showAdjustmentSheet && selectedUrl != null) {
+                             WallpaperAdjustmentSheet(
+                                 imageUri = fixWallpaperUrl(selectedUrl),
+                                 initialMobileBias = initialMobileBias,
+                                 initialTabletBias = initialTabletBias,
+                                 onDismiss = { showAdjustmentSheet = false },
+                                 onSave = { mBias, tBias ->
+                                     showAdjustmentSheet = false
+                                     // Save with adjustments
+                                     selectedUrl?.let { url ->
+                                        viewModel.saveWallpaper(url, mBias, tBias) {
+                                            onDismiss()
+                                            Toast.makeText(context, "背景设置成功", Toast.LENGTH_SHORT).show()
+                                        }
+                                     }
+                                 }
+                             )
+                         }
+                        
                         Button(
                             onClick = { 
-                                selectedUrl?.let { url ->
-                                    viewModel.saveWallpaper(url) {
-                                        onDismiss()
-                                        Toast.makeText(context, "背景设置成功", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
+                                showAdjustmentSheet = true
                             },
                             enabled = selectedUrl != null && !isSaving,
                             modifier = Modifier
