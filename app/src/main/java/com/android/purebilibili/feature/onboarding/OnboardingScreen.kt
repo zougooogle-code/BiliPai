@@ -24,12 +24,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.platform.testTag
+import com.android.purebilibili.core.util.rememberIsTvDevice
+import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 
 @Composable
@@ -37,12 +47,81 @@ fun OnboardingScreen(
     onFinish: () -> Unit
 ) {
     val pagerState = rememberPagerState(pageCount = { 4 })
-    val density = LocalDensity.current
+    val isTvDevice = rememberIsTvDevice()
+    val scope = rememberCoroutineScope()
+    val lastPage = remember { 3 }
+    val rootFocusRequester = remember { FocusRequester() }
+    val actionButtonFocusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(isTvDevice) {
+        if (isTvDevice) {
+            rootFocusRequester.requestFocus()
+        }
+    }
+
+    LaunchedEffect(isTvDevice, pagerState.currentPage) {
+        if (isTvDevice && pagerState.currentPage == lastPage) {
+            actionButtonFocusRequester.requestFocus()
+        }
+    }
+
+    val advanceOrFinish: () -> Unit = {
+        val decision = resolveOnboardingAdvanceDecision(
+            currentPage = pagerState.currentPage,
+            lastPage = lastPage
+        )
+        if (decision.shouldFinish) {
+            onFinish()
+        } else {
+            scope.launch {
+                pagerState.animateScrollToPage(decision.nextPage)
+            }
+        }
+    }
 
     // Background color - Clean White/Surface for that iOS feel
     Surface(
         color = MaterialTheme.colorScheme.surface,
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .testTag("onboarding_root")
+            .focusRequester(rootFocusRequester)
+            .focusable(enabled = isTvDevice)
+            .onPreviewKeyEvent { keyEvent ->
+                if (!isTvDevice || keyEvent.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                when (keyEvent.key) {
+                    Key.DirectionRight -> {
+                        val targetPage = resolveOnboardingHorizontalTargetPage(
+                            currentPage = pagerState.currentPage,
+                            lastPage = lastPage,
+                            delta = 1
+                        )
+                        if (targetPage != pagerState.currentPage) {
+                            scope.launch { pagerState.animateScrollToPage(targetPage) }
+                        }
+                        true
+                    }
+
+                    Key.DirectionLeft -> {
+                        val targetPage = resolveOnboardingHorizontalTargetPage(
+                            currentPage = pagerState.currentPage,
+                            lastPage = lastPage,
+                            delta = -1
+                        )
+                        if (targetPage != pagerState.currentPage) {
+                            scope.launch { pagerState.animateScrollToPage(targetPage) }
+                        }
+                        true
+                    }
+
+                    Key.DirectionCenter, Key.Enter, Key.NumPadEnter, Key.Spacebar -> {
+                        advanceOrFinish()
+                        true
+                    }
+
+                    else -> false
+                }
+            }
     ) {
         Column(
             modifier = Modifier
@@ -55,7 +134,8 @@ fun OnboardingScreen(
                 state = pagerState,
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxWidth()
+                    .fillMaxWidth(),
+                userScrollEnabled = !isTvDevice
             ) { page ->
                 // Basic Parallax/Scale Effect
                 val pageOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
@@ -126,13 +206,23 @@ fun OnboardingScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     androidx.compose.animation.AnimatedVisibility(
-                        visible = pagerState.currentPage == 3,
+                        visible = isTvDevice || pagerState.currentPage == 3,
                         enter = fadeIn() + scaleIn(),
                         exit = fadeOut() + scaleOut()
                     ) {
+                        val isLastPage = pagerState.currentPage == lastPage
                         Button(
-                            onClick = onFinish,
-                            modifier = Modifier.fillMaxSize(),
+                            onClick = advanceOrFinish,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .testTag("onboarding_action_button")
+                                .then(
+                                    if (isTvDevice) {
+                                        Modifier.focusRequester(actionButtonFocusRequester)
+                                    } else {
+                                        Modifier
+                                    }
+                                ),
                             shape = RoundedCornerShape(28.dp), // Squircle-ish
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
@@ -144,7 +234,7 @@ fun OnboardingScreen(
                             )
                         ) {
                             Text(
-                                text = "开始体验",
+                                text = if (isLastPage) "开始体验" else "下一步",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
