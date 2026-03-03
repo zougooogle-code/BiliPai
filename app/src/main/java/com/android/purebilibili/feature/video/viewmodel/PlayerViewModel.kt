@@ -246,6 +246,20 @@ internal fun resolveResumePlaybackSuggestion(
     return bestCandidate
 }
 
+internal fun resolveResumePlaybackPromptKey(
+    suggestion: ResumePlaybackSuggestion
+): String = "${suggestion.targetBvid}#${suggestion.targetCid}"
+
+internal fun shouldShowResumePlaybackPrompt(
+    suggestion: ResumePlaybackSuggestion?,
+    promptEnabled: Boolean,
+    hasPromptedBefore: (String) -> Boolean
+): Boolean {
+    if (!promptEnabled) return false
+    val candidate = suggestion ?: return false
+    return !hasPromptedBefore(resolveResumePlaybackPromptKey(candidate))
+}
+
 internal enum class AudioNextPlaybackStrategy {
     PLAY_EXTERNAL_PLAYLIST,
     PAGE_THEN_SEASON_THEN_RELATED
@@ -4141,7 +4155,32 @@ class PlayerViewModel : ViewModel() {
                 playbackUseCase.getCachedPosition(bvid, cid)
             }
         )
-        _resumePlaybackSuggestion.value = suggestion
+        val context = appContext
+        val promptEnabled = context?.let {
+            com.android.purebilibili.core.store.SettingsManager.getResumePlaybackPromptEnabledSync(it)
+        } ?: true
+
+        val shouldShowPrompt = shouldShowResumePlaybackPrompt(
+            suggestion = suggestion,
+            promptEnabled = promptEnabled,
+            hasPromptedBefore = { key ->
+                context?.let {
+                    com.android.purebilibili.core.store.SettingsManager.hasResumePlaybackPromptShown(it, key)
+                } ?: false
+            }
+        )
+
+        if (shouldShowPrompt && suggestion != null) {
+            context?.let {
+                com.android.purebilibili.core.store.SettingsManager.markResumePlaybackPromptShown(
+                    context = it,
+                    promptKey = resolveResumePlaybackPromptKey(suggestion)
+                )
+            }
+            _resumePlaybackSuggestion.value = suggestion
+        } else {
+            _resumePlaybackSuggestion.value = null
+        }
     }
 
     private suspend fun switchToInteractiveCid(targetCid: Long, targetEdgeId: Long? = null): Boolean {

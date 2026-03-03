@@ -567,6 +567,8 @@ fun PlaybackSettingsContent(
                     //  [新增] 自动播放下一个
                     val autoPlayEnabled by com.android.purebilibili.core.store.SettingsManager
                         .getAutoPlay(context).collectAsState(initial = true)
+                    val resumePlaybackPromptEnabled by com.android.purebilibili.core.store.SettingsManager
+                        .getResumePlaybackPromptEnabled(context).collectAsState(initial = true)
                     val playbackCompletionBehavior by com.android.purebilibili.core.store.SettingsManager
                         .getPlaybackCompletionBehavior(context)
                         .collectAsState(initial = PlaybackCompletionBehavior.CONTINUE_CURRENT_LOGIC)
@@ -598,6 +600,24 @@ fun PlaybackSettingsContent(
                                 }
                             },
                             iconTint = com.android.purebilibili.core.theme.iOSBlue
+                        )
+                        Divider()
+                        IOSSwitchItem(
+                            icon = CupertinoIcons.Default.ArrowTriangle2Circlepath,
+                            title = "续播弹窗提示",
+                            subtitle = if (resumePlaybackPromptEnabled) {
+                                "检测到历史进度时仅提醒一次"
+                            } else {
+                                "关闭后不再弹出“继续播放”提示"
+                            },
+                            checked = resumePlaybackPromptEnabled,
+                            onCheckedChange = {
+                                scope.launch {
+                                    com.android.purebilibili.core.store.SettingsManager
+                                        .setResumePlaybackPromptEnabled(context, it)
+                                }
+                            },
+                            iconTint = iOSTeal
                         )
                         Divider()
                         //  [新增] 自动播放下一个视频

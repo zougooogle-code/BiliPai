@@ -311,6 +311,10 @@ object SettingsManager {
 
     // --- Auto Play on Enter (Click to Play) ---
     private val KEY_CLICK_TO_PLAY = booleanPreferencesKey("click_to_play")
+    private val KEY_RESUME_PLAYBACK_PROMPT_ENABLED = booleanPreferencesKey("resume_playback_prompt_enabled")
+    private const val RESUME_PROMPT_CACHE_PREFS = "resume_prompt_cache"
+    private const val CACHE_KEY_RESUME_PROMPT_ENABLED = "resume_prompt_enabled"
+    private const val CACHE_KEY_RESUME_PROMPT_SHOWN = "resume_prompt_shown"
 
     fun getClickToPlay(context: Context): Flow<Boolean> = context.settingsDataStore.data
         .map { preferences -> preferences[KEY_CLICK_TO_PLAY] ?: true }
@@ -325,6 +329,48 @@ object SettingsManager {
     fun getClickToPlaySync(context: Context): Boolean {
         return context.getSharedPreferences("auto_play_cache", Context.MODE_PRIVATE)
             .getBoolean("click_to_play_enabled", true)
+    }
+
+    fun getResumePlaybackPromptEnabled(context: Context): Flow<Boolean> = context.settingsDataStore.data
+        .map { preferences -> preferences[KEY_RESUME_PLAYBACK_PROMPT_ENABLED] ?: true }
+
+    suspend fun setResumePlaybackPromptEnabled(context: Context, value: Boolean) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[KEY_RESUME_PLAYBACK_PROMPT_ENABLED] = value
+        }
+        context.getSharedPreferences(RESUME_PROMPT_CACHE_PREFS, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(CACHE_KEY_RESUME_PROMPT_ENABLED, value)
+            .apply()
+    }
+
+    fun getResumePlaybackPromptEnabledSync(context: Context): Boolean {
+        return context.getSharedPreferences(RESUME_PROMPT_CACHE_PREFS, Context.MODE_PRIVATE)
+            .getBoolean(CACHE_KEY_RESUME_PROMPT_ENABLED, true)
+    }
+
+    fun hasResumePlaybackPromptShown(context: Context, promptKey: String): Boolean {
+        if (promptKey.isBlank()) return false
+        val shownSet = context.getSharedPreferences(RESUME_PROMPT_CACHE_PREFS, Context.MODE_PRIVATE)
+            .getStringSet(CACHE_KEY_RESUME_PROMPT_SHOWN, emptySet())
+            .orEmpty()
+        return shownSet.contains(promptKey)
+    }
+
+    fun markResumePlaybackPromptShown(context: Context, promptKey: String) {
+        if (promptKey.isBlank()) return
+        val prefs = context.getSharedPreferences(RESUME_PROMPT_CACHE_PREFS, Context.MODE_PRIVATE)
+        val shownSet = prefs.getStringSet(CACHE_KEY_RESUME_PROMPT_SHOWN, emptySet())
+            .orEmpty()
+            .toMutableSet()
+        if (shownSet.contains(promptKey)) return
+        if (shownSet.size >= 500) {
+            shownSet.clear()
+        }
+        shownSet.add(promptKey)
+        prefs.edit()
+            .putStringSet(CACHE_KEY_RESUME_PROMPT_SHOWN, shownSet)
+            .apply()
     }
 
     // --- Auto Play Next ---
