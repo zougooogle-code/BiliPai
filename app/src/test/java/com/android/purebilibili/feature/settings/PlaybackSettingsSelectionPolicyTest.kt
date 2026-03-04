@@ -91,7 +91,8 @@ class PlaybackSettingsSelectionPolicyTest {
                 FullscreenAspectRatio.FIT,
                 FullscreenAspectRatio.FILL,
                 FullscreenAspectRatio.RATIO_16_9,
-                FullscreenAspectRatio.RATIO_4_3
+                FullscreenAspectRatio.RATIO_4_3,
+                FullscreenAspectRatio.STRETCH
             ),
             ratios
         )

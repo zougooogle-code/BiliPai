@@ -33,6 +33,7 @@ data class SettingsUiState(
     val displayMode: Int = 0,
     val cardAnimationEnabled: Boolean = false,     //  卡片进场动画（默认关闭）
     val cardTransitionEnabled: Boolean = false,    //  卡片过渡动画（默认关闭）
+    val predictiveBackAnimationEnabled: Boolean = true, // [New] 预测性返回联动动画
     val cacheSize: String = "计算中...",
     val cacheBreakdown: CacheUtils.CacheBreakdown? = null,  //  详细缓存统计
     //  实验性功能
@@ -76,6 +77,7 @@ data class ExtraSettings(
     val displayMode: Int,
     val cardAnimationEnabled: Boolean,
     val cardTransitionEnabled: Boolean,
+    val predictiveBackAnimationEnabled: Boolean,
     val hapticFeedbackEnabled: Boolean, // [Restored]
     val isLiquidGlassEnabled: Boolean = true, // [New]
     val liquidGlassStyle: com.android.purebilibili.core.store.LiquidGlassStyle, // [New]
@@ -112,6 +114,7 @@ private data class BaseSettings(
     val displayMode: Int, //  新增
     val cardAnimationEnabled: Boolean, //  卡片进场动画
     val cardTransitionEnabled: Boolean, //  卡片过渡动画
+    val predictiveBackAnimationEnabled: Boolean, // [New]
     val hapticFeedbackEnabled: Boolean, // [新增]
     val isLiquidGlassEnabled: Boolean, // [New]
     val liquidGlassStyle: com.android.purebilibili.core.store.LiquidGlassStyle, // [New]
@@ -154,6 +157,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         SettingsManager.getDisplayMode(context),
         SettingsManager.getCardAnimationEnabled(context), // [Restored]
         SettingsManager.getCardTransitionEnabled(context),
+        SettingsManager.getPredictiveBackAnimationEnabled(context), // [New]
         SettingsManager.getHapticFeedbackEnabled(context), // [新增]
         SettingsManager.getLiquidGlassEnabled(context), // [New]
         SettingsManager.getLiquidGlassStyle(context), // [New]
@@ -166,15 +170,42 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val displayMode = values[2] as Int
         val cardAnimation = values[3] as Boolean
         val cardTransition = values[4] as Boolean
-        val hapticFeedback = values[5] as Boolean
-        val liquidGlass = values[6] as Boolean
-        val liquidGlassStyle = values[7] as com.android.purebilibili.core.store.LiquidGlassStyle
-        val tabletUseSidebar = values[8] as Boolean
-        val headerCollapse = values[9] as Boolean
-        val gridColumnCount = values[10] as Int
+        val predictiveBackAnimation = values[5] as Boolean
+        val hapticFeedback = values[6] as Boolean
+        val liquidGlass = values[7] as Boolean
+        val liquidGlassStyle = values[8] as com.android.purebilibili.core.store.LiquidGlassStyle
+        val tabletUseSidebar = values[9] as Boolean
+        val headerCollapse = values[10] as Boolean
+        val gridColumnCount = values[11] as Int
         
-        data class Ui2(val f: Boolean, val l: Int, val d: Int, val ca: Boolean, val ct: Boolean, val h: Boolean, val lg: Boolean, val lgs: com.android.purebilibili.core.store.LiquidGlassStyle, val tus: Boolean, val hc: Boolean, val gcc: Int)
-        Ui2(isBottomBarFloating, labelMode, displayMode, cardAnimation, cardTransition, hapticFeedback, liquidGlass, liquidGlassStyle, tabletUseSidebar, headerCollapse, gridColumnCount)
+        data class Ui2(
+            val f: Boolean,
+            val l: Int,
+            val d: Int,
+            val ca: Boolean,
+            val ct: Boolean,
+            val pba: Boolean,
+            val h: Boolean,
+            val lg: Boolean,
+            val lgs: com.android.purebilibili.core.store.LiquidGlassStyle,
+            val tus: Boolean,
+            val hc: Boolean,
+            val gcc: Int
+        )
+        Ui2(
+            isBottomBarFloating,
+            labelMode,
+            displayMode,
+            cardAnimation,
+            cardTransition,
+            predictiveBackAnimation,
+            hapticFeedback,
+            liquidGlass,
+            liquidGlassStyle,
+            tabletUseSidebar,
+            headerCollapse,
+            gridColumnCount
+        )
     }
 
     // 合并所有 UI 设置
@@ -190,6 +221,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             displayMode = ui2.d,
             cardAnimationEnabled = ui2.ca,
             cardTransitionEnabled = ui2.ct,
+            predictiveBackAnimationEnabled = ui2.pba,
             hapticFeedbackEnabled = ui2.h, // [新增]
             isLiquidGlassEnabled = ui2.lg, // [New]
             liquidGlassStyle = ui2.lgs, // [New]
@@ -257,6 +289,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             displayMode = extra.displayMode,
             cardAnimationEnabled = extra.cardAnimationEnabled,
             cardTransitionEnabled = extra.cardTransitionEnabled,
+            predictiveBackAnimationEnabled = extra.predictiveBackAnimationEnabled,
             hapticFeedbackEnabled = extra.hapticFeedbackEnabled, // [新增]
             isLiquidGlassEnabled = extra.isLiquidGlassEnabled, // [New]
             liquidGlassStyle = extra.liquidGlassStyle, // [New]
@@ -293,6 +326,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             displayMode = settings.displayMode,
             cardAnimationEnabled = settings.cardAnimationEnabled,
             cardTransitionEnabled = settings.cardTransitionEnabled,
+            predictiveBackAnimationEnabled = settings.predictiveBackAnimationEnabled,
             hapticFeedbackEnabled = settings.hapticFeedbackEnabled, // [新增]
             isLiquidGlassEnabled = settings.isLiquidGlassEnabled, // [New]
             liquidGlassStyle = settings.liquidGlassStyle, // [New]
@@ -444,6 +478,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     
     //  [新增] 卡片过渡动画开关
     fun toggleCardTransition(value: Boolean) { viewModelScope.launch { SettingsManager.setCardTransitionEnabled(context, value) } }
+
+    // [New] 预测性返回联动动画开关
+    fun togglePredictiveBackAnimation(value: Boolean) {
+        viewModelScope.launch {
+            SettingsManager.setPredictiveBackAnimationEnabled(context, value)
+        }
+    }
     
     //  [新增] 首页展示模式
     fun setDisplayMode(mode: Int) { 

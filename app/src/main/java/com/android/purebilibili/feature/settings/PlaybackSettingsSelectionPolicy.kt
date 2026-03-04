@@ -75,6 +75,7 @@ internal fun resolveFullscreenAspectRatioSegmentOptions(): List<PlaybackSegmentO
         PlaybackSegmentOption(FullscreenAspectRatio.FIT, "适应"),
         PlaybackSegmentOption(FullscreenAspectRatio.FILL, "填充"),
         PlaybackSegmentOption(FullscreenAspectRatio.RATIO_16_9, "16:9"),
-        PlaybackSegmentOption(FullscreenAspectRatio.RATIO_4_3, "4:3")
+        PlaybackSegmentOption(FullscreenAspectRatio.RATIO_4_3, "4:3"),
+        PlaybackSegmentOption(FullscreenAspectRatio.STRETCH, "拉伸")
     )
 }

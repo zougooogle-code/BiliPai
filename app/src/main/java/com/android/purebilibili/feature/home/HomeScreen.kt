@@ -107,6 +107,7 @@ fun HomeScreen(
     onVideoClick: (HomeVideoClickRequest) -> Unit,
     onAvatarClick: () -> Unit,
     onProfileClick: () -> Unit,
+    onLogout: (() -> Unit)? = null,
     onSettingsClick: () -> Unit,
     onSearchClick: () -> Unit,
     //  新增：动态页面回调
@@ -128,7 +129,8 @@ fun HomeScreen(
     onDownloadClick: () -> Unit = {},  // 离线缓存页面
     onInboxClick: () -> Unit = {},  // 私信页面
     onStoryClick: () -> Unit = {},  //  [新增] 竖屏短视频
-    globalHazeState: dev.chrisbanes.haze.HazeState? = null  //  [新增] 全局底栏模糊状态
+    globalHazeState: dev.chrisbanes.haze.HazeState? = null,  //  [新增] 全局底栏模糊状态
+    predictiveBackAnimationEnabled: Boolean = true
 ) {
     val state by viewModel.uiState.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
@@ -432,7 +434,8 @@ fun HomeScreen(
     val baseIsBottomBarBlurEnabled = homeSettings.isBottomBarBlurEnabled
     val crashTrackingConsentShown = homeSettings.crashTrackingConsentShown
     val baseCardAnimationEnabled = homeSettings.cardAnimationEnabled      //  卡片进场动画开关
-    val baseCardTransitionEnabled = homeSettings.cardTransitionEnabled    //  卡片过渡动画开关
+    val baseCardTransitionEnabled = homeSettings.cardTransitionEnabled &&
+        !predictiveBackAnimationEnabled // 预测返回模式下禁用首页共享元素，避免叠层滞留
     val baseIsLiquidGlassEnabled = homeSettings.isLiquidGlassEnabled      //  流体玻璃特效开关
     val baseIsDataSaverActive = remember(context) {
         com.android.purebilibili.core.store.SettingsManager.isDataSaverActive(context)
@@ -1302,6 +1305,21 @@ fun HomeScreen(
                     viewModel.addToWatchLater(item.bvid, item.aid)
                     targetVideoItemState.value = null
                 },
+                onSaveCover = {
+                    val coverUrl = com.android.purebilibili.core.util.FormatUtils.fixImageUrl(item.pic)
+                    if (coverUrl.isBlank()) {
+                        android.widget.Toast.makeText(context, "无法获取封面地址", android.widget.Toast.LENGTH_SHORT).show()
+                        targetVideoItemState.value = null
+                    } else {
+                        coroutineScope.launch {
+                            val success = com.android.purebilibili.feature.download.DownloadManager
+                                .saveImageToGallery(context, coverUrl, item.title)
+                            val message = if (success) "封面已保存到相册" else "保存失败"
+                            android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                        targetVideoItemState.value = null
+                    }
+                },
                 onShare = {
                    val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                         type = "text/plain"
@@ -1337,7 +1355,10 @@ fun HomeScreen(
                     MineSideDrawer(
                         drawerState = drawerState,
                         user = state.user,
-                        onLogout = { /* 登出后由 ProfileScreen 处理 */ },
+                        onLogout = resolveHomeDrawerLogoutAction(
+                            onLogout = onLogout,
+                            onProfileClick = onProfileClick
+                        ),
                         onHistoryClick = onHistoryClick,
                         onFavoriteClick = onFavoriteClick,
                         onBangumiClick = { onBangumiClick(1) },

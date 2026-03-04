@@ -256,6 +256,18 @@ internal fun shouldUseTextureSurfaceForFlip(
     return isFlippedHorizontal || isFlippedVertical
 }
 
+internal fun shouldEnableLivePlayerSharedElement(
+    transitionEnabled: Boolean,
+    allowLivePlayerSharedElement: Boolean,
+    hasSharedTransitionScope: Boolean,
+    hasAnimatedVisibilityScope: Boolean
+): Boolean {
+    return transitionEnabled &&
+        allowLivePlayerSharedElement &&
+        hasSharedTransitionScope &&
+        hasAnimatedVisibilityScope
+}
+
 internal fun resolveSubtitleLanguageLabel(
     languageCode: String?,
     fallbackLabel: String
@@ -418,6 +430,7 @@ fun VideoPlayerSection(
     uiState: PlayerUiState,
     isFullscreen: Boolean,
     isInPipMode: Boolean,
+    transitionEnabled: Boolean = true,
     onToggleFullscreen: () -> Unit,
     onQualityChange: (Int, Long) -> Unit,
     onBack: () -> Unit,
@@ -495,6 +508,7 @@ fun VideoPlayerSection(
     onTriple: () -> Unit = {},  // [新增] 一键三连回调
     onPageSelect: (Int) -> Unit = {},
     forceCoverOnly: Boolean = false,
+    allowLivePlayerSharedElement: Boolean = true,
     suppressSubtitleOverlay: Boolean = false,
 ) {
     val context = LocalContext.current
@@ -729,11 +743,17 @@ fun VideoPlayerSection(
         .hazeSource(overlayDrawerHazeState)
 
     // 应用共享元素
-    if (bvid.isNotEmpty() && sharedTransitionScope != null && animatedVisibilityScope != null) {
-         with(sharedTransitionScope) {
+    val livePlayerSharedElementEnabled = shouldEnableLivePlayerSharedElement(
+            transitionEnabled = transitionEnabled,
+            allowLivePlayerSharedElement = allowLivePlayerSharedElement,
+            hasSharedTransitionScope = sharedTransitionScope != null,
+            hasAnimatedVisibilityScope = animatedVisibilityScope != null
+        )
+    if (bvid.isNotEmpty() && livePlayerSharedElementEnabled) {
+         with(requireNotNull(sharedTransitionScope)) {
              rootModifier = rootModifier.sharedElement(
                  sharedContentState = rememberSharedContentState(key = "video-$bvid"),
-                 animatedVisibilityScope = animatedVisibilityScope,
+                 animatedVisibilityScope = requireNotNull(animatedVisibilityScope),
                  boundsTransform = { _, _ ->
                      com.android.purebilibili.core.theme.AnimationSpecs.BiliPaiSpringSpec
                  }

@@ -319,6 +319,7 @@ fun VideoDetailScreen(
     startAudioFromRoute: Boolean = false,
     autoEnterPortraitFromRoute: Boolean = false,
     transitionEnabled: Boolean = false,
+    predictiveBackAnimationEnabled: Boolean = true,
     transitionEnterDurationMillis: Int = 320,
     transitionMaxBlurRadiusPx: Float = 20f,
     onBack: () -> Unit,
@@ -1348,6 +1349,7 @@ fun VideoDetailScreen(
                 uiState = uiState,
                 isFullscreen = true,
                 isInPipMode = isPipMode,
+                transitionEnabled = transitionEnabled,
                 onToggleFullscreen = { toggleFullscreen() },
                 onQualityChange = { qid, pos -> viewModel.changeQuality(qid, pos) },
                 onBack = { toggleFullscreen() },
@@ -1430,6 +1432,7 @@ fun VideoDetailScreen(
                 onRelatedVideoClick = navigateToRelatedVideo,
                 onPageSelect = { viewModel.switchPage(it) },
                 forceCoverOnly = forceCoverOnlyOnReturn,
+                allowLivePlayerSharedElement = !predictiveBackAnimationEnabled,
                 suppressSubtitleOverlay = shouldSuppressSubtitleOverlay
             )
         } else {
@@ -1654,6 +1657,7 @@ fun VideoDetailScreen(
                                 uiState = uiState,
                                 isFullscreen = false,
                                 isInPipMode = isPipMode,
+                                transitionEnabled = transitionEnabled,
                                 onToggleFullscreen = { toggleFullscreen() },
                                 onQualityChange = { qid, pos -> viewModel.changeQuality(qid, pos) },
                                 onBack = handleBack,
@@ -1708,6 +1712,7 @@ fun VideoDetailScreen(
                                 onSaveCover = { viewModel.saveCover(context) },
                                 onDownloadAudio = { viewModel.downloadAudio(context) },
                                 forceCoverOnly = forceCoverOnlyOnReturn,
+                                allowLivePlayerSharedElement = !predictiveBackAnimationEnabled,
                                 suppressSubtitleOverlay = shouldSuppressSubtitleOverlay
                                 //  空降助手 - 已由插件系统自动处理
                                 // sponsorSegment = sponsorSegment,

@@ -148,6 +148,15 @@ fun AnimationSettingsContent(
                             iconTint = iOSTeal
                         )
                         Divider()
+                        IOSSwitchItem(
+                            icon = CupertinoIcons.Default.ArrowLeftArrowRight,
+                            title = "预测性返回联动动画",
+                            subtitle = "关闭后改用经典回退动效，减少系统手势冲突",
+                            checked = state.predictiveBackAnimationEnabled,
+                            onCheckedChange = { viewModel.togglePredictiveBackAnimation(it) },
+                            iconTint = iOSBlue
+                        )
+                        Divider()
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()

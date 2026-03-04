@@ -250,7 +250,7 @@ dependencies {
     // NanoHTTPD (Lightweight local proxy server)
     implementation("org.nanohttpd:nanohttpd:2.3.1")
 
-    implementation("androidx.navigation:navigation-compose:2.9.0")
+    implementation("androidx.navigation:navigation-compose:2.9.4")
     
     // --- 9. SplashScreen (启动屏支持) ---
     implementation("androidx.core:core-splashscreen:1.2.0-alpha02")
