@@ -347,6 +347,8 @@ A lightweight plugin format requiring **no coding**, just a simple JSON file to 
 
 ## 📚 Wiki
 
+- AI / LLM Entry: [`llms.txt`](llms.txt)
+- AI Navigation Guide: [`docs/wiki/AI.md`](docs/wiki/AI.md)
 - Wiki Home: [`docs/wiki/README.md`](docs/wiki/README.md)
 - Feature Matrix: [`docs/wiki/FEATURE_MATRIX.md`](docs/wiki/FEATURE_MATRIX.md)
 - Architecture: [`docs/wiki/ARCHITECTURE.md`](docs/wiki/ARCHITECTURE.md)

@@ -494,6 +494,8 @@ app/src/main/java/com/android/purebilibili
 
 ## 📚 Wiki
 
+- AI / LLM 入口：[`llms.txt`](llms.txt)
+- AI 导航指南：[`docs/wiki/AI.md`](docs/wiki/AI.md)
 - Wiki 首页：[`docs/wiki/README.md`](docs/wiki/README.md)
 - 功能矩阵：[`docs/wiki/FEATURE_MATRIX.md`](docs/wiki/FEATURE_MATRIX.md)
 - 架构说明：[`docs/wiki/ARCHITECTURE.md`](docs/wiki/ARCHITECTURE.md)

@@ -1,11 +1,12 @@
 # BiliPai Wiki
 
-最后更新：2026-02-25（同步版本：v6.3.0）
+最后更新：2026-03-07（同步版本：v6.9.1）
 
 ## 目录
 
 - [功能矩阵](FEATURE_MATRIX.md)
 - [架构说明](ARCHITECTURE.md)
+- [AI 导航指南](AI.md)
 - [发布流程](RELEASE_WORKFLOW.md)
 - [QA 测试手册](QA.md)
 - [插件开发指南（JSON）](../PLUGIN_DEVELOPMENT.md)
