@@ -432,8 +432,9 @@ See full changelog: [CHANGELOG.md](CHANGELOG.md)
 
 ### Latest (v7.5.0 · 2026-04-06)
 
-- 🪐 **Space now boots from a steadier aggregated first screen**: the profile page prefers aggregated data, aligns closer to PiliPlus, and refreshes the header, stats, tabs, and contribution area with flatter theme-colored sections.
+- 🪐 **Space now boots from a steadier aggregated first screen**: the profile page prefers aggregated data and refreshes the header, stats, tabs, and contribution area with flatter theme-colored sections.
 - 🎬 **The first visit no longer flashes a false “No videos” state**: if the contribution list is still hydrating, the page stays in loading instead of falling into an empty state before refresh.
+- 🧩 **Secondary space data now loads in the background**: collections, series, favorites, and some stats no longer hard-block the first paint, so partial failures are less likely to break the whole page.
 - ⬆️ **Dynamic feed now has a back-to-top button**: once you scroll far enough, a floating shortcut appears so you can jump back to the top quickly.
 - 📐 **Author rows are better aligned on home cards**: followed and unfollowed cards now reserve the same trailing width so double-column layouts look more even.
 
