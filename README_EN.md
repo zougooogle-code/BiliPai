@@ -5,11 +5,11 @@
 </p>
 
 <p align="center">
-  <sub>Last updated: 2026-04-11 · Synced to v7.6.1 (source of truth: <a href="CHANGELOG.md">CHANGELOG</a> + code)</sub>
+  <sub>Last updated: 2026-04-12 · Synced to v7.7.0 (source of truth: <a href="CHANGELOG.md">CHANGELOG</a> + code)</sub>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-7.6.1-fb7299?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/Version-7.7.0-fb7299?style=flat-square" alt="Version">
   <img src="https://img.shields.io/github/stars/jay3-yy/BiliPai?style=flat-square&color=yellow" alt="Stars">
   <img src="https://img.shields.io/github/forks/jay3-yy/BiliPai?style=flat-square&color=green" alt="Forks">
   <img src="https://img.shields.io/github/last-commit/jay3-yy/BiliPai?style=flat-square&color=purple" alt="Last Commit">
@@ -388,7 +388,7 @@ A lightweight plugin format requiring **no coding**, just a simple JSON file to 
 ## 🗺️ Roadmap
 
 > [!TIP]
-> Roadmap last refreshed on 2026-04-11 (v7.6.1). For current behavior, prefer the latest release notes, `CHANGELOG.md`, and code.
+> Roadmap last refreshed on 2026-04-12 (v7.7.0). For current behavior, prefer the latest release notes, `CHANGELOG.md`, and code.
 
 ### ✅ Completed
 
@@ -430,13 +430,13 @@ A lightweight plugin format requiring **no coding**, just a simple JSON file to 
 
 See full changelog: [CHANGELOG.md](CHANGELOG.md)
 
-### Latest (v7.6.1 · 2026-04-11)
+### Latest (v7.7.0 · 2026-04-12)
 
-- 🎬 **Playback resume fix**: dragging the progress bar no longer causes playback to stay paused after backgrounding and returning to the app.
-- 🛠️ **Crash fix**: Miuix / large-screen responsive font scaling no longer crashes when it receives `TextUnit.Unspecified`.
-- 🫧 **Bottom-bar blur routing**: floating bottom bars now separate liquid glass, Haze blur, and plain surface paths more reliably.
-- 🧭 **Home tab sizing**: icon + text tabs get content-aware row height and spacing to reduce cramped Miuix / MD3 layouts.
-- 💬 **Sub-reply conversations**: reply `parent` / `dialog` fields are parsed so the detail view can filter a single conversation chain.
+- 💬 **Comment fetching**: main replies, sub replies, and conversation replies now use a gRPC path with REST fallback.
+- 🎖️ **Comment badges**: level, UP, fan-group decoration, fan medal, and nameplate rendering now stays closer to PiliPlus, including during playback.
+- 🧩 **Rich comments**: mentions, topics, server link titles, BVID links, votes, notes, opus entries, timestamps, and image previews are parsed consistently.
+- ✍️ **Comment actions**: long press now supports copy, free copy, save, reply, report, pin/unpin, and delete; the composer can insert playback progress and sync to dynamic.
+- 🎧 **Audio mode artwork**: covers are larger rounded rectangles with retained 3D flipping, blurred artwork background, and stronger card depth.
 
 ---
 

@@ -5,7 +5,6 @@ package com.android.purebilibili.feature.home.components
 import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
@@ -55,6 +54,7 @@ import androidx.compose.ui.graphics.graphicsLayer  //  晃动动画
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.navigation.NavController
@@ -122,8 +122,7 @@ import com.android.purebilibili.core.store.LiquidGlassMode
 import androidx.compose.foundation.isSystemInDarkTheme // [New] Theme detection for adaptive readability
 import androidx.compose.animation.core.EaseOut
 import kotlin.math.sign
-import top.yukonga.miuix.kmp.basic.FloatingNavigationBar as MiuixFloatingNavigationBar
-import top.yukonga.miuix.kmp.basic.FloatingNavigationBarItem as MiuixFloatingNavigationBarItem
+import top.yukonga.miuix.kmp.basic.NavigationBar as MiuixNavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationDisplayMode as MiuixNavigationDisplayMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -456,6 +455,12 @@ private fun Md3BottomBarDisplayMode.toMiuixNavigationDisplayMode(): MiuixNavigat
         Md3BottomBarDisplayMode.TextOnly -> MiuixNavigationDisplayMode.TextOnly
     }
 }
+
+internal fun resolveMiuixDockedBottomBarItemColor(
+    selected: Boolean,
+    selectedColor: Color,
+    unselectedColor: Color
+): Color = if (selected) selectedColor else unselectedColor
 
 internal fun resolveBottomBarFloatingHeightDp(
     labelMode: Int,
@@ -1517,8 +1522,6 @@ private fun MiuixBottomBar(
             blurIntensity = blurIntensity
         )
     }
-    val floatingChromeSpec = resolveMd3BottomBarFloatingChromeSpec(isFloating = true)
-
     if (isFloating) {
         KernelSuAlignedBottomBar(
             currentItem = currentItem,
@@ -1561,59 +1564,131 @@ private fun MiuixBottomBar(
             }
         )
 
-    MiuixFloatingNavigationBar(
+    MiuixNavigationBar(
         modifier = barModifier,
         color = containerColor,
-        cornerRadius = if (isFloating) floatingChromeSpec.cornerRadiusDp.dp else 0.dp,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        horizontalOutSidePadding = if (isFloating) {
-            floatingChromeSpec.horizontalOutsidePaddingDp.dp
-        } else {
-            0.dp
-        },
-        shadowElevation = if (isFloating) floatingChromeSpec.shadowElevationDp.dp else 0.dp,
         showDivider = false,
         defaultWindowInsetsPadding = true,
         mode = displayMode
     ) {
+        val selectedItemColor = MaterialTheme.colorScheme.primary
+        val unselectedItemColor = MaterialTheme.colorScheme.onSurfaceVariant
+
         visibleItems.forEach { item ->
             val itemLabel = resolveBottomNavItemLabel(item)
-            MiuixBottomBarItemShell(
+            MiuixDockedBottomBarItem(
                 selected = currentItem == item,
-                label = itemLabel
-            ) {
-                MiuixFloatingNavigationBarItem(
-                    selected = currentItem == item,
-                    onClick = {
-                        performMaterialBottomBarTap(
-                            haptic = haptic,
-                            onClick = { onItemClick(item) }
-                        )
-                    },
-                    icon = resolveMaterialBottomBarIcon(item, currentItem == item),
-                    label = itemLabel
-                )
-            }
+                onClick = {
+                    performMaterialBottomBarTap(
+                        haptic = haptic,
+                        onClick = { onItemClick(item) }
+                    )
+                },
+                icon = resolveMaterialBottomBarIcon(item, currentItem == item),
+                label = itemLabel,
+                showIcon = showIcon,
+                showText = showText,
+                selectedColor = selectedItemColor,
+                unselectedColor = unselectedItemColor
+            )
         }
 
         if (isTablet && onToggleSidebar != null) {
             val sidebarLabel = stringResource(R.string.sidebar_toggle)
-            MiuixBottomBarItemShell(
+            MiuixDockedBottomBarItem(
                 selected = false,
-                label = sidebarLabel
-            ) {
-                MiuixFloatingNavigationBarItem(
-                    selected = false,
-                    onClick = {
-                        performMaterialBottomBarTap(
-                            haptic = haptic,
-                            onClick = onToggleSidebar
-                        )
+                onClick = {
+                    performMaterialBottomBarTap(
+                        haptic = haptic,
+                        onClick = onToggleSidebar
+                    )
+                },
+                icon = Icons.AutoMirrored.Outlined.MenuOpen,
+                label = sidebarLabel,
+                showIcon = showIcon,
+                showText = showText,
+                selectedColor = selectedItemColor,
+                unselectedColor = unselectedItemColor
+            )
+        }
+    }
+}
+
+@Composable
+private fun RowScope.MiuixDockedBottomBarItem(
+    selected: Boolean,
+    onClick: () -> Unit,
+    icon: ImageVector,
+    label: String,
+    showIcon: Boolean,
+    showText: Boolean,
+    selectedColor: Color,
+    unselectedColor: Color
+) {
+    var isPressed by remember { mutableStateOf(false) }
+    val currentOnClick by rememberUpdatedState(onClick)
+    val baseContentColor = resolveMiuixDockedBottomBarItemColor(
+        selected = selected,
+        selectedColor = selectedColor,
+        unselectedColor = unselectedColor
+    )
+    val contentColor by animateColorAsState(
+        targetValue = if (isPressed) {
+            baseContentColor.copy(alpha = if (selected) 0.62f else 0.54f)
+        } else {
+            baseContentColor
+        },
+        label = "${label}_miuix_docked_bottom_bar_color"
+    )
+    val iconAndText = showIcon && showText
+    val textOnly = !showIcon && showText
+
+    Column(
+        modifier = Modifier
+            .height(64.dp)
+            .weight(1f)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        isPressed = true
+                        try {
+                            tryAwaitRelease()
+                        } finally {
+                            isPressed = false
+                        }
                     },
-                    icon = Icons.AutoMirrored.Outlined.MenuOpen,
-                    label = sidebarLabel
+                    onTap = { currentOnClick() }
                 )
-            }
+            },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = if (iconAndText) Arrangement.Top else Arrangement.Center
+    ) {
+        if (showIcon) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = contentColor,
+                modifier = Modifier
+                    .then(if (iconAndText) Modifier.padding(top = 8.dp) else Modifier)
+                    .size(26.dp)
+            )
+        }
+        if (showText) {
+            Text(
+                text = label,
+                color = contentColor,
+                textAlign = TextAlign.Center,
+                fontSize = if (textOnly) 14.sp else 12.sp,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                maxLines = 1,
+                modifier = Modifier.then(
+                    if (iconAndText) {
+                        Modifier.padding(bottom = 8.dp)
+                    } else {
+                        Modifier.padding(vertical = 8.dp)
+                    }
+                )
+            )
         }
     }
 }
@@ -2281,51 +2356,6 @@ private fun RowScope.AndroidNativeBottomBarItem(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun MiuixBottomBarItemShell(
-    selected: Boolean,
-    label: String,
-    content: @Composable () -> Unit
-) {
-    val capsuleColor by animateColorAsState(
-        targetValue = if (selected) {
-            MiuixTheme.colorScheme.secondaryContainer.copy(alpha = 0.92f)
-        } else {
-            Color.Transparent
-        },
-        animationSpec = androidx.compose.animation.core.tween(durationMillis = 220),
-        label = "${label}_capsule_color"
-    )
-    val capsuleScale by animateFloatAsState(
-        targetValue = if (selected) 1f else 0.9f,
-        animationSpec = androidx.compose.animation.core.tween(durationMillis = 220),
-        label = "${label}_capsule_scale"
-    )
-    val capsuleElevation by animateDpAsState(
-        targetValue = if (selected) 6.dp else 0.dp,
-        animationSpec = androidx.compose.animation.core.tween(durationMillis = 220),
-        label = "${label}_capsule_elevation"
-    )
-
-    Box(
-        modifier = Modifier
-            .graphicsLayer {
-                scaleX = capsuleScale
-                scaleY = capsuleScale
-            }
-            .shadow(
-                elevation = capsuleElevation,
-                shape = RoundedCornerShape(28.dp),
-                clip = false
-            )
-            .clip(RoundedCornerShape(28.dp))
-            .background(capsuleColor)
-            .padding(horizontal = 4.dp)
-    ) {
-        content()
     }
 }
 

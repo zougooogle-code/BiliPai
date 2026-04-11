@@ -76,6 +76,7 @@ import com.android.purebilibili.core.ui.rememberAppSearchIcon
 import com.android.purebilibili.core.ui.rememberAppVisibilityOffIcon
 import com.android.purebilibili.core.ui.rememberAppVisibilityOnIcon
 import com.android.purebilibili.core.ui.components.IOSSearchBar
+import com.android.purebilibili.core.ui.components.UserLevelBadge
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
@@ -1214,7 +1215,7 @@ private fun SpaceHeader(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            SpaceMetaTag(text = "LV${userInfo.level}", emphasized = true)
+                            UserLevelBadge(level = userInfo.level)
                             if (userInfo.vip.status == 1 && userInfo.vip.label.text.isNotEmpty()) {
                                 SpaceMetaTag(text = userInfo.vip.label.text)
                             }

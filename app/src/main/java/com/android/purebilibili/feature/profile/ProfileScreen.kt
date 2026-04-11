@@ -53,7 +53,6 @@ import com.android.purebilibili.core.theme.iOSBlue
 import com.android.purebilibili.core.theme.iOSGreen
 import com.android.purebilibili.core.theme.iOSOrange
 import com.android.purebilibili.core.theme.iOSYellow
-import com.android.purebilibili.core.theme.iOSSystemGray
 import com.android.purebilibili.core.theme.DarkBackground
 import com.android.purebilibili.core.theme.DarkSurface
 import com.android.purebilibili.core.theme.DarkSurfaceVariant
@@ -78,6 +77,7 @@ import com.android.purebilibili.core.ui.rememberAppProfileAddIcon
 import com.android.purebilibili.core.ui.rememberAppRefreshIcon
 import com.android.purebilibili.core.ui.rememberAppRestoreIcon
 import com.android.purebilibili.core.ui.rememberAppSettingsIcon
+import com.android.purebilibili.core.ui.components.UserLevelBadge
 import com.android.purebilibili.core.ui.rememberAppWarningIcon
 import com.android.purebilibili.core.ui.wallpaper.ProfileWallpaperLayout
 import com.android.purebilibili.core.ui.wallpaper.ProfileWallpaperTransform
@@ -1483,9 +1483,7 @@ private data class ProfileWallpaperActionItem(
 
 @Composable
 fun LevelTag(level: Int) {
-    Surface(color = if (level >= 5) iOSOrange else iOSSystemGray, shape = RoundedCornerShape(2.dp)) {
-        Text("LV$level", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp))
-    }
+    UserLevelBadge(level = level)
 }
 
 @Composable

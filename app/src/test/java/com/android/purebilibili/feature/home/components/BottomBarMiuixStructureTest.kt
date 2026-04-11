@@ -2,6 +2,7 @@ package com.android.purebilibili.feature.home.components
 
 import java.io.File
 import kotlin.test.Test
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class BottomBarMiuixStructureTest {
@@ -42,8 +43,22 @@ class BottomBarMiuixStructureTest {
         assertTrue(source.contains("KernelSuAlignedBottomBar("))
         assertTrue(source.contains("iconStyle = SharedFloatingBottomBarIconStyle.CUPERTINO"))
         assertTrue(source.contains("private enum class SharedFloatingBottomBarIconStyle"))
-        assertTrue(source.contains("MiuixFloatingNavigationBar("))
-        assertTrue(source.contains("MiuixFloatingNavigationBarItem("))
+        assertTrue(source.contains("MiuixNavigationBar("))
+        assertTrue(source.contains("MiuixDockedBottomBarItem("))
+    }
+
+    @Test
+    fun `docked miuix bottom bar avoids floating navigation insets`() {
+        val source = loadSource("app/src/main/java/com/android/purebilibili/feature/home/components/BottomBar.kt")
+        val miuixRendererSource = source
+            .substringAfter("private fun MiuixBottomBar(")
+            .substringBefore("@Composable\nprivate fun MiuixFloatingCapsuleBottomBar(")
+
+        assertTrue(miuixRendererSource.contains("MiuixNavigationBar("))
+        assertTrue(miuixRendererSource.contains("MiuixDockedBottomBarItem("))
+        assertFalse(miuixRendererSource.contains("MiuixNavigationBarItem("))
+        assertFalse(miuixRendererSource.contains("MiuixFloatingNavigationBar("))
+        assertFalse(miuixRendererSource.contains("MiuixFloatingNavigationBarItem("))
     }
 
     private fun loadSource(path: String): String {

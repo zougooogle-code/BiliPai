@@ -1,5 +1,6 @@
 package com.android.purebilibili.feature.home.components
 
+import androidx.compose.ui.graphics.Color
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -37,6 +38,29 @@ class BottomBarMiuixPolicyTest {
         assertEquals(
             Md3BottomBarDisplayMode.IconAndText,
             resolveMd3BottomBarDisplayMode(labelMode = 99)
+        )
+    }
+
+    @Test
+    fun `docked miuix bottom item uses theme color when selected`() {
+        val themeColor = Color(0xFFE85A91)
+        val neutralColor = Color(0xFF9A9AA0)
+
+        assertEquals(
+            themeColor,
+            resolveMiuixDockedBottomBarItemColor(
+                selected = true,
+                selectedColor = themeColor,
+                unselectedColor = neutralColor
+            )
+        )
+        assertEquals(
+            neutralColor,
+            resolveMiuixDockedBottomBarItemColor(
+                selected = false,
+                selectedColor = themeColor,
+                unselectedColor = neutralColor
+            )
         )
     }
 
