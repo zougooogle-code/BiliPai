@@ -67,6 +67,8 @@ bilipai_log_*.txt
 bilibili-API-collect/
 
 # 🔥 Ignore external projects/useless files
+/.external/
+/.local/
 external/
 AndroidLiquidGlass/
 SimpMusic/
@@ -81,6 +83,8 @@ docs/
 **/docs/
 docs/plans/
 **/docs/plans/
+docs/releases/raw/
+report.md
 *.md
 !llms.txt
 !README.md
